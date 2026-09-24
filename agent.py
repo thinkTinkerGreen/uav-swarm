@@ -49,11 +49,23 @@ Valid JSON schemas:
         text = ""
         try:
             if self.backend == "gemini":
-                response = self.client.models.generate_content(
-                    model='gemini-2.5-flash',
-                    contents=prompt,
-                )
-                text = response.text
+                for attempt in range(10):
+                    try:
+                        response = self.client.models.generate_content(
+                            model='gemini-3.6-flash',
+                            contents=prompt,
+                        )
+                        text = response.text
+                        break
+                    except Exception as ex:
+                        if '429' in str(ex) or 'quota' in str(ex).lower():
+                            print("Rate limited. Sleeping 15 seconds...")
+                            import time
+                            time.sleep(15)
+                        else:
+                            raise ex
+                else:
+                    raise Exception("Max retries exceeded")
             elif self.backend == "ollama":
                 resp = requests.post("http://localhost:11434/api/generate", json={
                     "model": "qwen3.5:0.8b",
