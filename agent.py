@@ -49,17 +49,22 @@ Valid JSON schemas:
         text = ""
         try:
             if self.backend == "gemini":
+                model_name = 'gemini-2.5-flash'
                 for attempt in range(10):
                     try:
                         response = self.client.models.generate_content(
-                            model='gemini-3.6-flash',
+                            model=model_name,
                             contents=prompt,
                         )
                         text = response.text
                         break
                     except Exception as ex:
-                        if '429' in str(ex) or 'quota' in str(ex).lower():
-                            print("Rate limited. Sleeping 15 seconds...")
+                        if '404' in str(ex) or 'not found' in str(ex).lower():
+                            print(f"{model_name} not found. Falling back to gemini-1.5-flash...")
+                            model_name = 'gemini-1.5-flash'
+                            continue
+                        elif '429' in str(ex) or 'quota' in str(ex).lower():
+                            print(f"Rate limited on {model_name}. Sleeping 15 seconds...")
                             import time
                             time.sleep(15)
                         else:

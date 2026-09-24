@@ -8,7 +8,7 @@ from metrics import Metrics
 from agent import SupervisoryAgent
 
 class Harness:
-    def __init__(self, num_agents=20, backend="mock", max_duration=10.0, record_traces=True):
+    def __init__(self, num_agents=20, backend="mock", max_duration=10.0, record_traces=True, run_id="unknown"):
         self.sim = FlockSimulator(num_agents=num_agents, dim=2, algo=1) # Start with Alg 1 to test refusal
         self.metrics_engine = Metrics(num_agents, self.sim.math.d, self.sim.math.r)
         self.agent = SupervisoryAgent(backend=backend)
@@ -22,6 +22,7 @@ class Harness:
         
         self.failsafe_triggered = False
         self.record_traces = record_traces
+        self.run_id = run_id
         
     def kinematic_loop(self):
         """Inner Loop: 33 Hz - 100 Hz"""
@@ -64,6 +65,7 @@ class Harness:
             # Record the trace for future fine-tuning
             if self.record_traces:
                 trace = {
+                    "run_id": self.run_id,
                     "metrics": latest_metrics,
                     "decision": decision,
                     "latency_sec": latency
