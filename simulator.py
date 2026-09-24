@@ -114,13 +114,41 @@ class FlockSimulator:
         u_a = self.compute_u_alpha()
         u_g = self.compute_u_gamma()
         
-        u = u_a + u_g
+        u = u_a + u_g + self.compute_u_beta()
         
         self.p += u * dt
         self.q += self.p * dt
+        
+        # dynamic updates
+        if hasattr(self, 'p_r'):
+            self.q_r += self.p_r * dt
+        
+        if hasattr(self, 'obstacles'):
+            for obs in self.obstacles:
+                if 'velocity' in obs:
+                    obs['center'] += obs['velocity'] * dt
 
 if __name__ == "__main__":
     sim = FlockSimulator(num_agents=20, dim=2, algo=2)
     print("Initial positions:", sim.q[:2])
     sim.step()
     print("After 1 step:", sim.q[:2])
+
+    def compute_u_beta(self):
+        u_beta = np.zeros((self.n, self.m))
+        if self.algo >= 3 and hasattr(self, 'obstacles'):
+            for i in range(self.n):
+                for obs in self.obstacles:
+                    if obs['type'] == 'sphere':
+                        # simple repulsion from sphere surface
+                        dist = np.linalg.norm(self.q[i] - obs['center'])
+                        if dist < obs['radius'] + self.math.r:
+                            n_ik = (self.q[i] - obs['center']) / dist
+                            u_beta[i] += self.c1_b * n_ik * (1.0 / (dist - obs['radius'] + 0.1))
+                    elif obs['type'] == 'wall':
+                        # distance to plane
+                        vec = self.q[i] - obs['point']
+                        dist = np.dot(vec, obs['normal'])
+                        if dist < self.math.r and dist > 0:
+                            u_beta[i] += self.c1_b * obs['normal'] * (1.0 / (dist + 0.1))
+        return u_beta
