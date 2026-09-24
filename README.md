@@ -61,3 +61,6 @@ The `SupervisoryAgent` currently supports three backends:
 - `"ollama"`: Queries `http://localhost:11434` for a locally deployed model like `qwen3.5:0.8b`.
 
 Toggle the backend inside `harness.py` or `test_flock.py` as needed.
+=======
+# uav-swarm
+Formation flight for N drones using the Olfati-Saber flocking laws, with an agent that tunes, diagnoses and validates the flock using an SLM.
