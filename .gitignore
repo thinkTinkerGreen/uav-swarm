@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+
+# Environments
+.env
+.env.local
+
+# Project specific
+*.gif
+*.mp4
+training_traces.jsonl
+Delivery_Report.md
+Implementation_Plan.md
