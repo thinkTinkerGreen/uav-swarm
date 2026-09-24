@@ -49,7 +49,7 @@ Valid JSON schemas:
         text = ""
         try:
             if self.backend == "gemini":
-                model_name = 'gemini-2.5-flash'
+                model_name = 'gemma-4-26b-a4b-it'
                 for attempt in range(10):
                     try:
                         response = self.client.models.generate_content(
@@ -60,8 +60,8 @@ Valid JSON schemas:
                         break
                     except Exception as ex:
                         if '404' in str(ex) or 'not found' in str(ex).lower():
-                            print(f"{model_name} not found. Falling back to gemini-1.5-flash...")
-                            model_name = 'gemini-1.5-flash'
+                            print(f"{model_name} not found. Falling back...")
+                            model_name = 'gemini-3.6-flash'
                             continue
                         elif '429' in str(ex) or 'quota' in str(ex).lower():
                             print(f"Rate limited on {model_name}. Sleeping 15 seconds...")

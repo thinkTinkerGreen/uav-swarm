@@ -128,12 +128,6 @@ class FlockSimulator:
                 if 'velocity' in obs:
                     obs['center'] += obs['velocity'] * dt
 
-if __name__ == "__main__":
-    sim = FlockSimulator(num_agents=20, dim=2, algo=2)
-    print("Initial positions:", sim.q[:2])
-    sim.step()
-    print("After 1 step:", sim.q[:2])
-
     def compute_u_beta(self):
         u_beta = np.zeros((self.n, self.m))
         if self.algo >= 3 and hasattr(self, 'obstacles'):
@@ -152,3 +146,10 @@ if __name__ == "__main__":
                         if dist < self.math.r and dist > 0:
                             u_beta[i] += self.c1_b * obs['normal'] * (1.0 / (dist + 0.1))
         return u_beta
+
+if __name__ == "__main__":
+    sim = FlockSimulator(num_agents=20, dim=2, algo=2)
+    print("Initial positions:", sim.q[:2])
+    sim.step()
+    print("After 1 step:", sim.q[:2])
+
