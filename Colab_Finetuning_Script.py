@@ -27,25 +27,12 @@ OUTPUT_GGUF_NAME = "qwen3.5-uav-swarm-q4_k_m.gguf"
 # ==========================================
 def format_prompt_from_trace(trace_dict):
     metrics = trace_dict["metrics"]
-    return f"""You are a UAV swarm supervisory controller (SLM endpoint).
-Your goal is to ensure the flock stays cohesive, avoids obstacles, and tracks the gamma agent.
-
-Current telemetry (latest):
-Semi-Connectivity (C*): {metrics['c_star']:.2f} (1.0 = fully connected, rapid drop indicates fragmentation)
-Normalized Deviation Energy (E~): {metrics['e_tilde']:.2f} (lower is better, < 0.01 is ideal)
-Normalized Velocity Mismatch (K~): {metrics['k_tilde']:.2f} (lower is better)
-Collisions: {metrics['collisions']}
-
-Algorithm 1 embodies Reynolds rules but generically leads to regular fragmentation.
-If you detect fragmentation (C* dropping below 0.8), you MUST call switch_algorithm with target_algo 2.
-If you detect an imminent collision or mathematically unsolvable obstacle geometry, call not_sure.
-
-You must output EXACTLY one JSON block, and no other text.
-Valid JSON schemas:
-{{"fn": "switch_algorithm", "args": {{"target_algo": 2}}, "why": "string"}}
-{{"fn": "adjust_squad_gains", "args": {{"squad_id": "all", "param": "c1_alpha"}}, "why": "string"}}
-{{"fn": "not_sure", "args": {{"squad_id": "all", "reason": "string"}}, "why": "string"}}
-"""
+    return f"""[UAV]
+C*:{metrics['c_star']:.2f}
+E~:{metrics['e_tilde']:.5f}
+K~:{metrics['k_tilde']:.2f}
+Col:{metrics['collisions']}
+[Go]"""
 
 print("Loading dataset...")
 raw_data = []
@@ -56,14 +43,24 @@ with open(TRACES_FILE, 'r') as f:
         except:
             pass
 
-formatted_data = {"messages": []}
+formatted_data = {"text": []}
 for trace in raw_data:
     user_prompt = format_prompt_from_trace(trace)
-    assistant_response = json.dumps(trace["decision"])
-    formatted_data["messages"].append([
-        {"role": "user", "content": user_prompt},
-        {"role": "assistant", "content": assistant_response}
-    ])
+    
+    # Strip the "why" explanation to save tokens, keep only fn and args
+    decision = trace["decision"]
+    optimized_decision = {"fn": decision["fn"], "args": decision.get("args", {})}
+    
+    # Use compact JSON separators (no spaces)
+    assistant_response = json.dumps(optimized_decision, separators=(',', ':'))
+    
+    # Manually construct the ChatML string as requested
+    chatml_string = f"""<|im_start|>user
+{user_prompt}<|im_end|>
+<|im_start|>assistant
+{assistant_response}<|im_end|>"""
+    
+    formatted_data["text"].append(chatml_string)
 
 # Convert to HuggingFace Dataset
 dataset = Dataset.from_dict(formatted_data)
@@ -79,8 +76,7 @@ model, tokenizer = FastLanguageModel.from_pretrained(
     load_in_4bit = True,
 )
 
-# Apply Qwen ChatML Template natively
-dataset = dataset.map(lambda x: {"text": tokenizer.apply_chat_template(x["messages"], tokenize=False, add_generation_prompt=False)})
+
 
 model = FastLanguageModel.get_peft_model(
     model,
