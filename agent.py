@@ -77,7 +77,7 @@ Valid JSON schemas:
                     raise Exception("Max retries exceeded")
             elif self.backend == "ollama":
                 resp = requests.post("http://localhost:11434/api/generate", json={
-                    "model": "Qwen3.5-0.8B.Q4K-uav",
+                    "model": "Qwen3.5-0.8B.Q4K-uav-flight",
                     "prompt": prompt,
                     "raw": True,
                     "stream": False,
