@@ -26,8 +26,8 @@ class SupervisoryAgent:
                 return {"fn": "not_sure", "args": {"squad_id": "all", "reason": "collision imminent"}, "why": "safety hold"}
             return {"fn": "adjust_squad_gains", "args": {"squad_id": "all", "param": "c1_alpha"}, "why": "nominal flight"}
 
-        prompt = f"""
-You are a UAV swarm supervisory controller (SLM endpoint).
+        if self.backend == "gemini":
+            prompt = f"""You are a UAV swarm supervisory controller (SLM endpoint).
 Your goal is to ensure the flock stays cohesive, avoids obstacles, and tracks the gamma agent.
 
 Current telemetry (latest):
@@ -39,6 +39,7 @@ Collisions: {latest_metrics['collisions']}
 Algorithm 1 embodies Reynolds rules but generically leads to regular fragmentation.
 If you detect fragmentation (C* dropping below 0.8), you MUST call switch_algorithm with target_algo 2.
 If you detect an imminent collision or mathematically unsolvable obstacle geometry, call not_sure.
+If everything is nominal and above thresholds, call adjust_squad_gains.
 
 You must output EXACTLY one JSON block, and no other text.
 Valid JSON schemas:
@@ -46,6 +47,9 @@ Valid JSON schemas:
 {{"fn": "adjust_squad_gains", "args": {{"squad_id": "all", "param": "c1_alpha"}}, "why": "string"}}
 {{"fn": "not_sure", "args": {{"squad_id": "all", "reason": "string"}}, "why": "string"}}
 """
+        else:
+            prompt = f"""<|im_start|>system\nYou are a UAV controller. You MUST output ONLY valid JSON. No conversational text. No explanations.<|im_end|>\n<|im_start|>user\n[UAV]\nC*:{latest_metrics['c_star']:.2f}\nE~:{latest_metrics['e_tilde']:.5f}\nK~:{latest_metrics['k_tilde']:.2f}\nCol:{latest_metrics['collisions']}\n[Go]<|im_end|>\n<|im_start|>assistant\n"""
+
         text = ""
         try:
             if self.backend == "gemini":
@@ -73,9 +77,11 @@ Valid JSON schemas:
                     raise Exception("Max retries exceeded")
             elif self.backend == "ollama":
                 resp = requests.post("http://localhost:11434/api/generate", json={
-                    "model": "qwen3.5:0.8b",
+                    "model": "Qwen3.5-0.8B.Q4K-uav",
                     "prompt": prompt,
-                    "stream": False
+                    "raw": True,
+                    "stream": False,
+                    "options": {"num_predict": 50}
                 })
                 text = resp.json().get("response", "")
 

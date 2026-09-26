@@ -38,14 +38,7 @@ class Metrics:
                 components.append(comp_nodes)
         
         largest_comp = max(components, key=len)
-        # Count edges in the largest component
-        edges_in_largest = 0
-        for i in largest_comp:
-            for j in largest_comp:
-                if i < j and adj[i, j]:
-                    edges_in_largest += 1
-        
-        c_star = edges_in_largest / self.total_complete_edges if self.total_complete_edges > 0 else 0
+        c_star = len(largest_comp) / self.n
         
         # 2. Normalized Deviation Energy (E_tilde)
         # Eq: E(q) = 1 / (|E(q)| + 1) * sum_{i} sum_{j in N_i} (||q_j - q_i|| - d)^2
