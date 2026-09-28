@@ -10,7 +10,6 @@ if sys.platform == "android":
     sys.platform = "linux"  # Trick llama-cpp-python into loading the Android .so
 from llama_cpp import Llama, LlamaRAMCache
 import re
-import requests
 
 class LLMClient:
     def __init__(self, backend="mock"):
@@ -139,6 +138,11 @@ Col:{latest_metrics['collisions']}
                 )
                 text = response['choices'][0]['text'].strip()
             elif self.backend == "ollama":
+                try:
+                    import requests
+                except ImportError:
+                    print("requests module not found. Ollama backend unavailable.")
+                    raise
 
                 resp = requests.post("http://localhost:11434/api/generate", json={
                     "model": "qwen2.5-0.5b-instruct-uav-flight.Q4_K_M.gguf:latest",
