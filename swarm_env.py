@@ -4,6 +4,12 @@ import numpy as np
 import copy
 import json
 from simulator import FlockSimulator
+
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if hasattr(obj, 'tolist'):
+            return obj.tolist()
+        return super().default(obj)
 from metrics import Metrics
 
 class SwarmEnvironment:
@@ -40,7 +46,7 @@ class SwarmEnvironment:
             json.dump({
                 "obstacles": self.obstacles,
                 "frames": self.trajectory_log
-            }, f)
+            }, f, cls=NumpyEncoder)
 
     def _kinematic_loop(self):
         start_time = time.time()
