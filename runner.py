@@ -27,13 +27,13 @@ def main():
     # Run 1-8
     for sc_id, sc_name in scenarios:
         print(f"Running Scenario {sc_id}: {sc_name}")
-        h = Harness(num_agents=15, backend="ollama", max_duration=2.5, record_traces=True, run_id=sc_name, trajectory_file=f"{sc_name}.json", trace_file=EVAL_FILE)
+        h = Harness(num_agents=15, backend="native", max_duration=2.5, record_traces=True, run_id=sc_name, trajectory_file=f"{sc_name}.json", trace_file=EVAL_FILE)
         apply_scenario(h.sim, sc_id)
         h.run()
 
     # Run 9: Gauntlet
     print("Running Scenario 9: the_gauntlet")
-    h9 = Harness(num_agents=15, backend="ollama", max_duration=4.0, record_traces=True, run_id="the_gauntlet", trajectory_file="the_gauntlet.json", trace_file=EVAL_FILE)
+    h9 = Harness(num_agents=15, backend="native", max_duration=4.0, record_traces=True, run_id="the_gauntlet", trajectory_file="the_gauntlet.json", trace_file=EVAL_FILE)
     apply_the_gauntlet(h9.sim)
     h9.run()
     
@@ -44,7 +44,7 @@ def main():
         (3.0, "clear_collision")
     ]
     # NOTE: We must monkey-patch CinematicHarness to accept trace_file
-    h10 = CinematicHarness(num_agents=15, backend="ollama", max_duration=4.0, trajectory_file="honest_failure.json", script_events=events)
+    h10 = CinematicHarness(num_agents=15, backend="native", max_duration=4.0, trajectory_file="honest_failure.json", script_events=events)
     h10.controller.trace_file = EVAL_FILE
     h10.controller.run_id = "honest_failure"
     apply_failure_and_recovery(h10.sim)
