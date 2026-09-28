@@ -5,14 +5,17 @@ import json
 from llama_cpp import Llama, LlamaRAMCache
 import re
 import requests
-from google import genai
 
 class LLMClient:
     def __init__(self, backend="mock"):
         # backend can be "mock", "gemini", or "ollama"
         self.backend = backend
         if backend == "gemini":
-            self.client = genai.Client()
+            try:
+                from google import genai
+                self.client = genai.Client()
+            except ImportError:
+                print("[LLMClient] Warning: google-genai not installed. Gemini backend unavailable.")
         elif backend == "native":
             print("[LLMClient] Initializing Native Llama with KV Cache...")
             self.llm = Llama(
