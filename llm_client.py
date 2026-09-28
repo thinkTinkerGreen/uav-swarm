@@ -16,7 +16,7 @@ class LLMClient:
         elif backend == "native":
             print("[LLMClient] Initializing Native Llama with KV Cache...")
             self.llm = Llama(
-                model_path="Qwen3.5-0.8B.Q4_K_M-uav-flight.gguf",
+                model_path="qwen2.5-0.5b-instruct-uav-flight.Q4_K_M.gguf",
                 n_ctx=256,
                 n_threads=4,
                 verbose=False
@@ -70,7 +70,30 @@ Valid JSON schemas:
 {{"fn": "not_sure", "args": {{"squad_id": "all", "reason": "string"}}, "why": "string"}}
 """
         else:
-            prompt = f"""<|im_start|>system\nYou are a UAV controller. You MUST output ONLY valid JSON. No conversational text. No explanations.<|im_end|>\n<|im_start|>user\n[UAV]\nC*:{latest_metrics['c_star']:.2f}\nE~:{latest_metrics['e_tilde']:.5f}\nK~:{latest_metrics['k_tilde']:.2f}\nCol:{latest_metrics['collisions']}\n[Go]<|im_end|>\n<|im_start|>assistant\n"""
+            if hasattr(self, "llm") and "0.5b" in getattr(self.llm, "model_path", "").lower():
+                prompt = f"""<|im_start|>system
+You are a UAV controller. Output EXACTLY ONE WORD: 'ADJUST', 'SWITCH', or 'HOLD'. No explanations.<|im_end|>
+<|im_start|>user
+[UAV]
+C*:{latest_metrics['c_star']:.2f}
+E~:{latest_metrics['e_tilde']:.5f}
+K~:{latest_metrics['k_tilde']:.2f}
+Col:{latest_metrics['collisions']}
+[Go]<|im_end|>
+<|im_start|>assistant
+"""
+            else:
+                prompt = f"""<|im_start|>system
+You are a UAV controller. You MUST output ONLY valid JSON. No conversational text. No explanations.<|im_end|>
+<|im_start|>user
+[UAV]
+C*:{latest_metrics['c_star']:.2f}
+E~:{latest_metrics['e_tilde']:.5f}
+K~:{latest_metrics['k_tilde']:.2f}
+Col:{latest_metrics['collisions']}
+[Go]<|im_end|>
+<|im_start|>assistant
+"""
 
         text = ""
         try:
@@ -109,7 +132,7 @@ Valid JSON schemas:
             elif self.backend == "ollama":
 
                 resp = requests.post("http://localhost:11434/api/generate", json={
-                    "model": "Qwen3.5-0.8B.Q4K-uav-flight",
+                    "model": "qwen2.5-0.5b-instruct-uav-flight.Q4_K_M.gguf:latest",
                     "prompt": prompt,
                     "raw": True,
                     "stream": False,
@@ -117,6 +140,16 @@ Valid JSON schemas:
                 })
                 text = resp.json().get("response", "")
 
+            # New 1-Token Mapper (Phase B Optimization)
+            text_upper = text.strip().upper()
+            if "SWITCH" in text_upper:
+                return {"fn": "switch_algorithm", "args": {"target_algo": 2}}
+            elif "HOLD" in text_upper:
+                return {"fn": "not_sure", "args": {"squad_id": "all", "reason": "safety_hold"}}
+            elif "ADJUST" in text_upper:
+                return {"fn": "adjust_squad_gains", "args": {"squad_id": "all", "param": "c1_alpha"}}
+
+            # Fallback to JSON parsing if it's the old model
             match = re.search(r'\{.*\}', text, re.DOTALL)
             if match:
                 return json.loads(match.group(0))
