@@ -5,6 +5,9 @@ except ImportError:
     pass
 import os
 import json
+import sys
+if sys.platform == "android":
+    sys.platform = "linux"  # Trick llama-cpp-python into loading the Android .so
 from llama_cpp import Llama, LlamaRAMCache
 import re
 import requests
