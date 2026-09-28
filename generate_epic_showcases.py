@@ -67,8 +67,7 @@ def apply_failure_and_recovery(sim):
     sim.obstacles = []
 
 def main():
-    print("
---- Cinematic Showcase 2: Honest Failure & Recovery ---")
+    print("--- Cinematic Showcase 2: Honest Failure & Recovery ---")
     events = [
         (3.0, "force_collision"),
         (7.0, "clear_collision")
@@ -77,8 +76,7 @@ def main():
     apply_failure_and_recovery(h2.sim)
     h2.run()
     os.system(".venv/bin/python plot_scenarios.py --input failure_and_recovery.json --output failure_and_recovery.gif")
-    print("
-🎉 Cinematic Showcases completely rendered!")
+    print("Cinematic Showcases completely rendered!")
 
 if __name__ == "__main__":
     main()
