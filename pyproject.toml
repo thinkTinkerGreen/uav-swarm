@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "uav_swarm"
+version = "0.1.0"
+description = "UAV Swarm Physics Simulator and SLM Controller"
+dependencies = [
+    "numpy>=1.26.4",
+    "matplotlib>=3.8.4",
+    "llama-cpp-python>=0.3.35"
+]
+requires-python = ">=3.9"

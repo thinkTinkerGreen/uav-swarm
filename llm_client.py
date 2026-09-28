@@ -6,7 +6,7 @@ import re
 import requests
 from google import genai
 
-class SupervisoryAgent:
+class LLMClient:
     def __init__(self, backend="mock"):
         # backend can be "mock", "gemini", or "ollama"
         self.backend = backend
@@ -19,7 +19,18 @@ class SupervisoryAgent:
         """
         latest_metrics = metrics_history[-1]
         
+        
+        # Guardrail: Check for impossible physical bounds (KPI 4 Fix)
+        try:
+            c = float(latest_metrics['c_star'])
+            col = int(latest_metrics['collisions'])
+            if c < 0.0 or c > 1.0 or col < 0:
+                return {"fn": "not_sure", "args": {"squad_id": "all", "reason": "corrupted_telemetry_bounds"}}
+        except (ValueError, TypeError, KeyError):
+            return {"fn": "not_sure", "args": {"squad_id": "all", "reason": "telemetry_parsing_error"}}
+            
         if self.backend == "mock":
+
             if latest_metrics['c_star'] < 0.5:
                 return {"fn": "switch_algorithm", "args": {"target_algo": 2}, "why": "fragmentation detected"}
             if latest_metrics['collisions'] > 0:

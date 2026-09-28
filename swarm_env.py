@@ -1,0 +1,98 @@
+import threading
+import time
+import numpy as np
+import copy
+import json
+from simulator import FlockSimulator
+from metrics import Metrics
+
+class SwarmEnvironment:
+    """
+    The decoupled physical environment. Runs the physics simulation asynchronously
+    and exposes a thread-safe API for reading telemetry and applying commands.
+    """
+    def __init__(self, num_agents=20, max_duration=10.0, trajectory_file="flight_path.json"):
+        self.sim = FlockSimulator(num_agents=num_agents, dim=2, algo=1)
+        self.metrics_engine = Metrics(num_agents, self.sim.math.d, self.sim.math.r)
+        
+        self.max_duration = max_duration
+        self.dt = 0.03
+        self.running = False
+        
+        self.metrics_history = []
+        self.lock = threading.Lock()
+        
+        self.failsafe_triggered = False
+        self.trajectory_file = trajectory_file
+        self.trajectory_log = []
+        
+    def start(self):
+        self.running = True
+        self.obstacles = self.sim.obstacles
+        self._thread = threading.Thread(target=self._kinematic_loop)
+        self._thread.start()
+        
+    def join(self):
+        if self._thread:
+            self._thread.join()
+        # Dump telemetry when simulation ends
+        with open(self.trajectory_file, "w") as f:
+            json.dump({
+                "obstacles": self.obstacles,
+                "frames": self.trajectory_log
+            }, f)
+
+    def _kinematic_loop(self):
+        start_time = time.time()
+        step_count = 0
+        
+        while self.running and (time.time() - start_time) < self.max_duration:
+            loop_start = time.time()
+            
+            with self.lock:
+                if self.failsafe_triggered:
+                    self.sim.p *= 0.0 # Emergency brakes
+                self.sim.step(dt=self.dt)
+                metrics = self.metrics_engine.compute_all(self.sim.q, self.sim.p)
+                self.metrics_history.append(metrics)
+                if len(self.metrics_history) > 10:
+                    self.metrics_history.pop(0)
+                    
+                self.trajectory_log.append({
+                    "time": step_count * self.dt,
+                    "algo": self.sim.algo,
+                    "q": self.sim.q.tolist()
+                })
+                    
+            step_count += 1
+            elapsed = time.time() - loop_start
+            time.sleep(max(0, self.dt - elapsed))
+            
+        self.running = False
+
+    # ---------------------------------------------------------
+    # PUBLIC API FOR CONTROLLER (TOOL CALLS)
+    # ---------------------------------------------------------
+    def is_running(self):
+        return self.running
+
+    def read_telemetry(self):
+        with self.lock:
+            if len(self.metrics_history) == 0:
+                return None
+            return copy.deepcopy(self.metrics_history)
+            
+    def apply_command(self, decision):
+        """Tool call to manipulate the physics engine based on JSON decision"""
+        with self.lock:
+            fn = decision.get("fn")
+            if fn == "switch_algorithm":
+                target = decision.get("args", {}).get("target_algo", 2)
+                self.sim.algo = target
+                self.failsafe_triggered = False
+            elif fn == "adjust_squad_gains":
+                self.sim.algo = 1
+                self.failsafe_triggered = False
+            elif fn == "not_sure":
+                self.failsafe_triggered = True
+                self.sim.algo = 3

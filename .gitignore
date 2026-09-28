@@ -237,3 +237,10 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 *.gguf
+
+# Simulation outputs & test records
+*.json
+*.jsonl
+
+# Temporary patch scripts
+patch_*.py
