@@ -23,8 +23,14 @@ class LLMClient:
                 print("[LLMClient] Warning: google-genai not installed. Gemini backend unavailable.")
         elif backend == "native":
             print("[LLMClient] Initializing Native Llama with KV Cache...")
+            model_file = "qwen2.5-0.5b-instruct-uav-flight.Q4_K_M.gguf"
+            model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), model_file)
+            if not os.path.exists(model_path):
+                print(f"[LLMClient] ERROR: Model not found at {model_path}")
+                print("Please make sure the .gguf file is in the same folder as this script!")
+            
             self.llm = Llama(
-                model_path="qwen2.5-0.5b-instruct-uav-flight.Q4_K_M.gguf",
+                model_path=model_path,
                 n_ctx=256,
                 n_threads=4,
                 verbose=False
