@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 load_dotenv()
 import os
 import json
+from llama_cpp import Llama, LlamaRAMCache
 import re
 import requests
 from google import genai
@@ -12,6 +13,16 @@ class LLMClient:
         self.backend = backend
         if backend == "gemini":
             self.client = genai.Client()
+        elif backend == "native":
+            print("[LLMClient] Initializing Native Llama with KV Cache...")
+            self.llm = Llama(
+                model_path="Qwen3.5-0.8B.Q4_K_M-uav-flight.gguf",
+                n_ctx=256,
+                n_threads=4,
+                verbose=False
+            )
+            # Enable KV Cache
+            self.llm.set_cache(LlamaRAMCache(capacity_bytes=256 * 1024 * 1024))
             
     def get_decision(self, metrics_history):
         """
@@ -86,7 +97,17 @@ Valid JSON schemas:
                             raise ex
                 else:
                     raise Exception("Max retries exceeded")
+            
+            elif self.backend == "native":
+                response = self.llm(
+                    prompt,
+                    max_tokens=50,
+                    temperature=0.0,
+                    stop=["<|im_end|>"]
+                )
+                text = response['choices'][0]['text'].strip()
             elif self.backend == "ollama":
+
                 resp = requests.post("http://localhost:11434/api/generate", json={
                     "model": "Qwen3.5-0.8B.Q4K-uav-flight",
                     "prompt": prompt,
