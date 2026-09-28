@@ -2,7 +2,7 @@ import os
 import json
 from harness import Harness
 from simulator_patch import apply_scenario
-from generate_epic_showcases import apply_the_gauntlet, apply_failure_and_recovery, CinematicHarness
+from generate_epic_showcases import apply_failure_and_recovery, CinematicHarness
 
 EVAL_FILE = "eval_run_records.jsonl"
 
@@ -34,7 +34,7 @@ def main():
     # Run 9: Gauntlet
     print("Running Scenario 9: the_gauntlet")
     h9 = Harness(num_agents=15, backend="native", max_duration=4.0, record_traces=True, run_id="the_gauntlet", trajectory_file="the_gauntlet.json", trace_file=EVAL_FILE)
-    apply_the_gauntlet(h9.sim)
+    apply_scenario(h9.sim, 4)
     h9.run()
     
     # Run 10: Failure & Recovery (Requires CinematicHarness to mock the collision)
