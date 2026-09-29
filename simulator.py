@@ -105,9 +105,10 @@ class FlockSimulator:
 
     def compute_u_gamma(self):
         u_gamma = np.zeros((self.n, self.m))
-        if self.algo >= 2:
+        if self.algo >= 1:
+            targets = np.tile(self.q_r, (self.n, 1)) if self.q_r.ndim == 1 else self.q_r
             for i in range(self.n):
-                u_gamma[i] = -self.c1_g * self.math.sigma_1(self.q[i] - self.q_r) - self.c2_g * (self.p[i] - self.p_r)
+                u_gamma[i] = -self.c1_g * self.math.sigma_1(self.q[i] - targets[i]) - self.c2_g * (self.p[i] - self.p_r)
         return u_gamma
 
     def step(self, dt=0.03):
@@ -130,7 +131,7 @@ class FlockSimulator:
 
     def compute_u_beta(self):
         u_beta = np.zeros((self.n, self.m))
-        if self.algo >= 3 and hasattr(self, 'obstacles'):
+        if self.algo >= 2 and hasattr(self, 'obstacles'):
             for i in range(self.n):
                 for obs in self.obstacles:
                     if obs['type'] == 'sphere':
