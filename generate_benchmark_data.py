@@ -82,7 +82,7 @@ if __name__ == "__main__":
     if num_existing > 0:
         print(f"Found {num_existing} valid states. Resuming generation...")
         
-    target_total = 100 # Reduced to 100 to finish fast within limits!
+    target_total = 200 # Reduced to 100 to finish fast within limits!
     
     if num_existing >= target_total:
         print(f"Dataset already complete with {num_existing} valid states!")
