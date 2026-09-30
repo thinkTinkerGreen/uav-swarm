@@ -21,7 +21,7 @@ jobs:
         pip install pytest numpy
     - name: Run Unit Tests
       run: |
-        pytest tests/ -v
+        python -m pytest tests/ -v
     - name: Golden Master Regression Test
       run: |
         # In the future, we will run the headless simulation and diff against golden_master.json
