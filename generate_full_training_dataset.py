@@ -7,13 +7,19 @@ def get_oracle_decision(c_star, col):
     else: return "ADJUST"
 
 def generate_prompt(c_star, e_tilde, k_tilde, col):
+    # Phase 2.5: Inject Fuzzy Sensor Noise into the dataset
+    # This prevents the SLM from overfitting to "perfect" math boundaries
+    c_noisy = max(0.0, min(1.0, c_star + random.gauss(0, 0.05)))
+    e_noisy = max(0.0, e_tilde + random.gauss(0, 0.005))
+    k_noisy = max(0.0, k_tilde + random.gauss(0, 0.05))
+    
     return f"""<|im_start|>system
 You are a UAV controller. Output EXACTLY ONE WORD: 'ADJUST', 'SWITCH', or 'HOLD'. No explanations.<|im_end|>
 <|im_start|>user
 [UAV]
-C*:{c_star:.2f}
-E~:{e_tilde:.5f}
-K~:{k_tilde:.2f}
+C*:{c_noisy:.2f}
+E~:{e_noisy:.5f}
+K~:{k_noisy:.2f}
 Col:{col}
 [Go]<|im_end|>
 <|im_start|>assistant
@@ -53,7 +59,7 @@ def generate_dataset(num_samples_per_class):
     return dataset
 
 if __name__ == "__main__":
-    print("Synthesizing V2 Training Dataset with perfectly balanced attention features...")
+    print("Synthesizing V2.5 Fuzzy Training Dataset with noise augmentation...")
     # Generating 4,000 samples for EACH class (12,000 total rows)
     data = generate_dataset(4000) 
     
