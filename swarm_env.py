@@ -5,6 +5,7 @@ import copy
 import json
 from simulator import FlockSimulator
 from metrics import Metrics
+from swarm_logger import log_event
 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -27,7 +28,7 @@ class SwarmEnvironment:
         self.failsafe_triggered = False
         self.trajectory_file = trajectory_file
         self.trajectory_log = []
-        self.sensor_noise_std = 0.5 # 0.5 meters of GPS inaccuracy
+        self.sensor_noise_std = 0.5 
         
     def start(self):
         self.running = True
@@ -59,8 +60,6 @@ class SwarmEnvironment:
                     
                 self.sim.step(dt=self.dt)
                 
-                # Phase 2.5: Inject Sensor Noise (Fuzzy Localization)
-                # The SLM must make decisions based on noisy state estimates
                 noisy_q = self.sim.q + np.random.normal(0, self.sensor_noise_std, self.sim.q.shape)
                 noisy_p = self.sim.p + np.random.normal(0, 0.1, self.sim.p.shape)
                 
@@ -72,7 +71,7 @@ class SwarmEnvironment:
                 self.trajectory_log.append({
                     "time": step_count * self.dt,
                     "algo": self.sim.algo,
-                    "leader_id": self.sim.leader_id,
+                    "squad_leaders": copy.deepcopy(self.sim.squad_leaders),
                     "q": self.sim.q.tolist()
                 })
                     
@@ -98,9 +97,12 @@ class SwarmEnvironment:
                 target = decision.get("args", {}).get("target_algo", 2)
                 self.sim.algo = target
                 self.failsafe_triggered = False
+                log_event("SLM_DECISION", decision="SWITCH", target=target)
             elif fn == "adjust_squad_gains":
                 self.sim.algo = 1
                 self.failsafe_triggered = False
+                log_event("SLM_DECISION", decision="ADJUST")
             elif fn == "not_sure":
                 self.failsafe_triggered = True
                 self.sim.algo = 3
+                log_event("SLM_DECISION", decision="HOLD")
