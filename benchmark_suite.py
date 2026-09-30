@@ -63,9 +63,6 @@ def evaluate_slm():
         if slm_action == oracle:
             exact_matches_slm += 1
             outcome_matches_slm += 1
-        elif (slm_action == "SWITCH" and oracle == "ADJUST") or (slm_action == "ADJUST" and oracle == "SWITCH"):
-            if telem["collisions"] == 0: outcome_matches_slm += 1
-            else: disagreements.append(f"[SLM] C*={telem['c_star']}, Col={telem['collisions']}. Expected {oracle}, Got {slm_action}")
         else:
             disagreements.append(f"[SLM] C*={telem['c_star']}, Col={telem['collisions']}. Expected {oracle}, Got {slm_action}")
             
@@ -74,32 +71,53 @@ def evaluate_slm():
             if frontier == oracle:
                 exact_matches_frontier += 1
                 outcome_matches_frontier += 1
-            elif (frontier == "SWITCH" and oracle == "ADJUST") or (frontier == "ADJUST" and oracle == "SWITCH"):
-                if telem["collisions"] == 0: outcome_matches_frontier += 1
                     
     # Metrics
     n = len(dataset)
     m1_slm = (exact_matches_slm / n) * 100
-    m2_slm = (outcome_matches_slm / n) * 100
     
     valid_frontier = len([r for r in dataset if r["frontier_decision"] not in ["ERROR", "UNKNOWN"]])
     m1_front = (exact_matches_frontier / valid_frontier) * 100 if valid_frontier > 0 else 0
-    m2_front = (outcome_matches_frontier / valid_frontier) * 100 if valid_frontier > 0 else 0
     
     avg_latency_slm = (total_time / n) * 1000
     peak_mem_slm = peak_memory / (1024 * 1024)
     
-    # SLM Battery (4W CPU)
     j_per_dec_slm = 4.0 * (avg_latency_slm / 1000)
     batt_slm = (54000 / j_per_dec_slm) / 100 if j_per_dec_slm > 0 else 0
     
-    # Frontier Battery (0.6s latency over 5G radio @ 2.5W)
     avg_latency_front = 600.0
     j_per_dec_front = 2.5 * (avg_latency_front / 1000)
     batt_front = (54000 / j_per_dec_front) / 100
     
-    print(f"\nSLM: M1={m1_slm:.1f}%, M2={m2_slm:.1f}%, Lat={avg_latency_slm:.1f}ms, Mem={peak_mem_slm:.1f}MB, Batt={batt_slm:.0f}")
-    print(f"FRN: M1={m1_front:.1f}%, M2={m2_front:.1f}%, Lat={avg_latency_front:.1f}ms, Mem=0MB (API), Batt={batt_front:.0f}")
+    print(f"\nSLM: M1={m1_slm:.1f}%, Lat={avg_latency_slm:.1f}ms, Mem={peak_mem_slm:.1f}MB, Batt={batt_slm:.0f}")
+    
+    md_report = f"""# 📊 Final Benchmark Matrix (V2 - Fine-Tuned)
+
+This benchmark evaluates the newly fine-tuned `qwen2.5-0.5B` against the Gemini 2.5 Flash API across 200 fuzzy, noise-injected test frames.
+
+## Results Matrix
+
+| Metric | Goal | Frontier (Gemini 2.5 Flash) | Local Edge (Qwen2.5-0.5B-FT) |
+| :--- | :--- | :--- | :--- |
+| **Test Frames** | 200 | {valid_frontier} Valid | {n} Evaluated |
+| **Accuracy (Exact Match)** | > 95% | **{m1_front:.1f}%** | **{m1_slm:.1f}%** |
+| **Inference Latency** | < 100ms | {avg_latency_front:.1f}ms (5G Network) | {avg_latency_slm:.1f}ms (Local CPU) |
+| **Memory Footprint** | < 1GB | N/A (API) | {peak_mem_slm:.1f} MB |
+| **Total Decisions (15Wh)** | Maximize | {batt_front:,.0f} | {batt_slm:,.0f} |
+
+"""
+    if len(disagreements) == 0:
+        md_report += "\n## 🎉 Disagreement Analysis\n**ZERO DISAGREEMENTS!** The fine-tuned SLM perfectly mapped all Extreme Adversarial edge-cases and proved 100% immune to the fuzzy sensor noise!\n"
+    else:
+        md_report += "\n## ⚠️ Disagreement Analysis\nThe SLM failed on the following frames:\n```text\n"
+        for d in disagreements[:10]:
+            md_report += d + "\n"
+        md_report += "```\n"
+
+    with open("/home/opc/.gemini/antigravity-cli/brain/666ea37a-f32d-4909-be4a-33f8a87665f1/Final_Benchmark_Report.md", "w") as f:
+        f.write(md_report)
+        
+    print("Report written to Final_Benchmark_Report.md!")
 
 if __name__ == "__main__":
     evaluate_slm()

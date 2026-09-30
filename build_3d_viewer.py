@@ -56,10 +56,6 @@ def build_html():
         const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
         dirLight.position.set(100, 200, 50);
         dirLight.castShadow = true;
-        dirLight.shadow.camera.top = 100;
-        dirLight.shadow.camera.bottom = -100;
-        dirLight.shadow.camera.left = -100;
-        dirLight.shadow.camera.right = 100;
         scene.add(dirLight);
 
         // Ground Grid
@@ -68,6 +64,12 @@ def build_html():
         gridHelper.material.transparent = true;
         scene.add(gridHelper);
         
+        const reticleGeo = new THREE.RingGeometry(2, 3, 32);
+        const reticleMat = new THREE.MeshBasicMaterial({{ color: 0xFF0000, side: THREE.DoubleSide }});
+        const targetReticle = new THREE.Mesh(reticleGeo, reticleMat);
+        targetReticle.rotation.x = -Math.PI / 2;
+        scene.add(targetReticle);
+        
         const groundGeo = new THREE.PlaneGeometry(400, 400);
         const groundMat = new THREE.MeshLambertMaterial({{ color: 0x90EE90 }});
         const ground = new THREE.Mesh(groundGeo, groundMat);
@@ -75,7 +77,7 @@ def build_html():
         ground.receiveShadow = true;
         scene.add(ground);
 
-        // Obstacles (The Wall)
+        // Obstacles
         const obsGeo = new THREE.CylinderGeometry(10, 10, 30, 32);
         const obsMat = new THREE.MeshLambertMaterial({{ color: 0xFF3333, transparent: true, opacity: 0.8 }});
         flightData.obstacles.forEach(obs => {{
@@ -90,31 +92,18 @@ def build_html():
         const createDrone = () => {{
             const group = new THREE.Group();
             
-            // Body
             const bodyGeo = new THREE.BoxGeometry(2.0, 0.6, 2.0);
             const bodyMat = new THREE.MeshLambertMaterial({{ color: 0x424242 }});
             const body = new THREE.Mesh(bodyGeo, bodyMat);
             body.castShadow = true;
-            body.name = "body"; // Tag it so we can change color later
+            body.name = "body";
             group.add(body);
             
-            // Propeller arms
-            const armGeo = new THREE.CylinderGeometry(0.15, 0.15, 3.5);
-            const armMat = new THREE.MeshLambertMaterial({{ color: 0x212121 }});
-            const arm1 = new THREE.Mesh(armGeo, armMat);
-            arm1.rotation.x = Math.PI / 2;
-            arm1.rotation.y = Math.PI / 4;
-            const arm2 = new THREE.Mesh(armGeo, armMat);
-            arm2.rotation.x = Math.PI / 2;
-            arm2.rotation.y = -Math.PI / 4;
-            group.add(arm1);
-            group.add(arm2);
-
             scene.add(group);
             return group;
         }};
 
-        for(let i=0; i<8; i++) {{
+        for(let i=0; i<20; i++) {{ // Assuming up to 20 for these demos
             drones.push(createDrone());
         }}
 
@@ -145,31 +134,38 @@ def build_html():
                 const frameObj = flightData.frames[currentFrame];
                 const frameData = frameObj.drones;
                 
-                // Update AI UI
                 decisionText.innerText = frameObj.decision;
                 decisionText.style.color = frameObj.color;
                 aiStatusBox.style.borderColor = frameObj.color;
                 
+                if (frameObj.target_x !== undefined) {{
+                    targetReticle.position.set(frameObj.target_x, 0.5, -frameObj.target_y);
+                    targetReticle.visible = true;
+                }} else {{
+                    targetReticle.visible = false;
+                }}
+                
                 let currentLeader = null;
                 
                 frameData.forEach((dData, idx) => {{
-                    const drone = drones[idx];
-                    drone.position.set(dData.x, 10, -dData.y); // Height 10m
-                    drone.rotation.y = -dData.yaw; 
-                    
-                    // Dynamic Leader Coloring
-                    const bodyMesh = drone.getObjectByName("body");
-                    if (dData.is_leader) {{
-                        bodyMesh.material.color.setHex(0xFFC107); // Gold Leader
-                        currentLeader = dData;
-                    }} else {{
-                        bodyMesh.material.color.setHex(0x424242); // Grey Follower
+                    if(idx < drones.length) {{
+                        const drone = drones[idx];
+                        drone.position.set(dData.x, 10, -dData.y); 
+                        drone.rotation.y = -dData.yaw; 
+                        
+                        const bodyMesh = drone.getObjectByName("body");
+                        if (dData.is_leader) {{
+                            bodyMesh.material.color.setHex(0xFFC107);
+                            currentLeader = dData;
+                        }} else {{
+                            bodyMesh.material.color.setHex(0x424242);
+                        }}
                     }}
                 }});
 
                 if (isFollowCam && currentLeader) {{
-                    const distance = 25;
-                    const height = 15;
+                    const distance = 40;
+                    const height = 25;
                     const camX = currentLeader.x - Math.cos(currentLeader.yaw) * distance;
                     const camZ = -currentLeader.y + Math.sin(currentLeader.yaw) * distance;
                     
@@ -204,7 +200,7 @@ def build_html():
     with open("flight_viewer.html", "w") as f:
         f.write(html)
         
-    print("Successfully built flight_viewer.html with Dynamic Leader Election!")
+    print("Successfully built flight_viewer.html!")
 
 if __name__ == "__main__":
     build_html()
