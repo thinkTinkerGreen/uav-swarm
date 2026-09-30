@@ -4,19 +4,15 @@ import numpy as np
 import copy
 import json
 from simulator import FlockSimulator
+from metrics import Metrics
 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
         if hasattr(obj, 'tolist'):
             return obj.tolist()
         return super().default(obj)
-from metrics import Metrics
 
 class SwarmEnvironment:
-    """
-    The decoupled physical environment. Runs the physics simulation asynchronously
-    and exposes a thread-safe API for reading telemetry and applying commands.
-    """
     def __init__(self, num_agents=20, max_duration=10.0, trajectory_file="flight_path.json"):
         self.sim = FlockSimulator(num_agents=num_agents, dim=2, algo=1)
         self.metrics_engine = Metrics(num_agents, self.sim.math.d, self.sim.math.r)
@@ -31,6 +27,7 @@ class SwarmEnvironment:
         self.failsafe_triggered = False
         self.trajectory_file = trajectory_file
         self.trajectory_log = []
+        self.sensor_noise_std = 0.5 # 0.5 meters of GPS inaccuracy
         
     def start(self):
         self.running = True
@@ -41,12 +38,13 @@ class SwarmEnvironment:
     def join(self):
         if self._thread:
             self._thread.join()
-        # Dump telemetry when simulation ends
-        with open(self.trajectory_file, "w") as f:
-            json.dump({
-                "obstacles": self.obstacles,
-                "frames": self.trajectory_log
-            }, f, cls=NumpyEncoder)
+        
+        if self.trajectory_file:
+            with open(self.trajectory_file, "w") as f:
+                json.dump({
+                    "obstacles": self.obstacles,
+                    "frames": self.trajectory_log
+                }, f, cls=NumpyEncoder)
 
     def _kinematic_loop(self):
         start_time = time.time()
@@ -57,9 +55,16 @@ class SwarmEnvironment:
             
             with self.lock:
                 if self.failsafe_triggered:
-                    self.sim.p *= 0.0 # Emergency brakes
+                    self.sim.p *= 0.0 
+                    
                 self.sim.step(dt=self.dt)
-                metrics = self.metrics_engine.compute_all(self.sim.q, self.sim.p)
+                
+                # Phase 2.5: Inject Sensor Noise (Fuzzy Localization)
+                # The SLM must make decisions based on noisy state estimates
+                noisy_q = self.sim.q + np.random.normal(0, self.sensor_noise_std, self.sim.q.shape)
+                noisy_p = self.sim.p + np.random.normal(0, 0.1, self.sim.p.shape)
+                
+                metrics = self.metrics_engine.compute_all(noisy_q, noisy_p)
                 self.metrics_history.append(metrics)
                 if len(self.metrics_history) > 10:
                     self.metrics_history.pop(0)
@@ -67,6 +72,7 @@ class SwarmEnvironment:
                 self.trajectory_log.append({
                     "time": step_count * self.dt,
                     "algo": self.sim.algo,
+                    "leader_id": self.sim.leader_id,
                     "q": self.sim.q.tolist()
                 })
                     
@@ -76,9 +82,6 @@ class SwarmEnvironment:
             
         self.running = False
 
-    # ---------------------------------------------------------
-    # PUBLIC API FOR CONTROLLER (TOOL CALLS)
-    # ---------------------------------------------------------
     def is_running(self):
         return self.running
 
@@ -89,7 +92,6 @@ class SwarmEnvironment:
             return copy.deepcopy(self.metrics_history)
             
     def apply_command(self, decision):
-        """Tool call to manipulate the physics engine based on JSON decision"""
         with self.lock:
             fn = decision.get("fn")
             if fn == "switch_algorithm":

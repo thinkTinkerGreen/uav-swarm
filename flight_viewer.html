@@ -81,14 +81,15 @@
 
         // Drones
         const drones = [];
-        const createDrone = (isLeader) => {
+        const createDrone = () => {
             const group = new THREE.Group();
             
             // Body
             const bodyGeo = new THREE.BoxGeometry(2.0, 0.6, 2.0);
-            const bodyMat = new THREE.MeshLambertMaterial({ color: isLeader ? 0xFFC107 : 0x424242 });
+            const bodyMat = new THREE.MeshLambertMaterial({ color: 0x424242 });
             const body = new THREE.Mesh(bodyGeo, bodyMat);
             body.castShadow = true;
+            body.name = "body"; // Tag it so we can change color later
             group.add(body);
             
             // Propeller arms
@@ -108,7 +109,7 @@
         };
 
         for(let i=0; i<8; i++) {
-            drones.push(createDrone(i === 0));
+            drones.push(createDrone());
         }
 
         let currentFrame = 0;
@@ -125,7 +126,7 @@
         document.getElementById('camToggle').addEventListener('click', (e) => {
             isFollowCam = !isFollowCam;
             controls.enabled = !isFollowCam;
-            e.target.innerText = isFollowCam ? "Enable Follow Cam (Drone 0)" : "Enable Free Cam";
+            e.target.innerText = isFollowCam ? "Enable Follow Cam (Leader)" : "Enable Free Cam";
         });
 
         const decisionText = document.getElementById('decisionText');
@@ -143,21 +144,31 @@
                 decisionText.style.color = frameObj.color;
                 aiStatusBox.style.borderColor = frameObj.color;
                 
+                let currentLeader = null;
+                
                 frameData.forEach((dData, idx) => {
                     const drone = drones[idx];
                     drone.position.set(dData.x, 10, -dData.y); // Height 10m
                     drone.rotation.y = -dData.yaw; 
+                    
+                    // Dynamic Leader Coloring
+                    const bodyMesh = drone.getObjectByName("body");
+                    if (dData.is_leader) {
+                        bodyMesh.material.color.setHex(0xFFC107); // Gold Leader
+                        currentLeader = dData;
+                    } else {
+                        bodyMesh.material.color.setHex(0x424242); // Grey Follower
+                    }
                 });
 
-                if (isFollowCam && frameData[0]) {
-                    const leader = frameData[0];
+                if (isFollowCam && currentLeader) {
                     const distance = 25;
                     const height = 15;
-                    const camX = leader.x - Math.cos(leader.yaw) * distance;
-                    const camZ = -leader.y + Math.sin(leader.yaw) * distance;
+                    const camX = currentLeader.x - Math.cos(currentLeader.yaw) * distance;
+                    const camZ = -currentLeader.y + Math.sin(currentLeader.yaw) * distance;
                     
                     camera.position.lerp(new THREE.Vector3(camX, 10 + height, camZ), 0.1);
-                    const target = new THREE.Vector3(leader.x, 10, -leader.y);
+                    const target = new THREE.Vector3(currentLeader.x, 10, -currentLeader.y);
                     camera.lookAt(target);
                     controls.target.copy(target);
                 } else if (!isFollowCam) {

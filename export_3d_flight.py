@@ -30,7 +30,7 @@ class ExportHarness(Harness):
             self.flight_data["obstacles"].append({"x": 30.0, "y": float(y), "radius": 10.0})
 
     def run_demo(self):
-        print("Starting 3D Export Simulation...")
+        print("Starting Robustness 3D Export Simulation...")
         self.env.start()
         
         while self.env.is_running():
@@ -61,23 +61,23 @@ class ExportHarness(Harness):
                 if self.retreat_triggered and avg_x < -40:
                     self.env.running = False
                     
-                # Determine decision string based on algo
                 if self.env.sim.algo == 1:
                     decision = "ADJUST (Nominal)"
-                    color = "#4CAF50" # Green
+                    color = "#4CAF50"
                 elif self.env.sim.algo == 2:
                     decision = "SWITCH (Evasion)"
-                    color = "#FFC107" # Yellow
+                    color = "#FFC107"
                 else:
                     decision = "HOLD (RTL Failsafe)"
-                    color = "#F44336" # Red
+                    color = "#F44336"
                     
                 frame = []
+                leader_id = self.env.sim.leader_id
                 for i in range(self.n):
                     x, y = self.env.sim.q[i]
                     vx, vy = self.env.sim.p[i]
                     yaw = math.atan2(vy, vx) if (abs(vx) > 0.1 or abs(vy) > 0.1) else 0.0
-                    frame.append({"x": float(x), "y": float(y), "yaw": float(yaw)})
+                    frame.append({"x": float(x), "y": float(y), "yaw": float(yaw), "is_leader": (i == leader_id)})
                 
                 self.flight_data["frames"].append({"drones": frame, "decision": decision, "color": color})
                     
