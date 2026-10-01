@@ -1,6 +1,13 @@
 import json
 import time
-import psutil
+
+try:
+    import psutil
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
+    print("[WARNING] psutil not found. Memory tracking disabled (Mobile Mode).")
+
 import os
 from llm_client import LLMClient
 
@@ -28,7 +35,7 @@ def evaluate_slm():
     disagreements = []
     
     total_time = 0.0
-    process = psutil.Process(os.getpid())
+    process = psutil.Process(os.getpid()) if PSUTIL_AVAILABLE else None
     peak_memory = 0
     
     print("Starting evaluation...")
@@ -42,11 +49,11 @@ def evaluate_slm():
             "collisions": telem["collisions"]
         }
         
-        mem_before = process.memory_info().rss
+        mem_before = process.memory_info().rss if PSUTIL_AVAILABLE else 0
         t0 = time.perf_counter()
         decision = client.get_decision([mapped_telem])
         t1 = time.perf_counter()
-        mem_after = process.memory_info().rss
+        mem_after = process.memory_info().rss if PSUTIL_AVAILABLE else 0
         
         total_time += (t1 - t0)
         peak_memory = max(peak_memory, mem_after)
