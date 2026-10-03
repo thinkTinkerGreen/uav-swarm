@@ -21,7 +21,7 @@ def evaluate_slm():
         
     dataset = [json.loads(line) for line in lines]
     
-    print("Initializing local 0.5B SLM...")
+    print("Initializing local 135M SLM...")
     client = LLMClient(backend="native")
     
     # SLM vs Oracle
@@ -73,12 +73,21 @@ def evaluate_slm():
         else:
             disagreements.append(f"[SLM] C*={telem['c_star']}, Col={telem['collisions']}. Expected {oracle}, Got {slm_action}")
             
+
         # Grade Frontier vs Oracle
         if frontier != "ERROR" and frontier != "UNKNOWN":
             if frontier == oracle:
                 exact_matches_frontier += 1
                 outcome_matches_frontier += 1
+        
+        # REAL-TIME PROGRESS LOGGER (Safe from timing block)
+        if (i + 1) % 5 == 0 or (i + 1) == len(dataset):
+            current_acc = (exact_matches_slm / (i + 1)) * 100
+            current_lat = (total_time / (i + 1)) * 1000
+            print(f"\r[135M SLM] Evaluating frame {i+1}/{len(dataset)}... (Acc: {current_acc:.1f}% | Lat: {current_lat:.1f}ms)", end="", flush=True)
+
                     
+    print() # Newline to cleanly exit the progress bar
     # Metrics
     n = len(dataset)
     m1_slm = (exact_matches_slm / n) * 100
@@ -100,11 +109,11 @@ def evaluate_slm():
     
     md_report = f"""# 📊 Final Benchmark Matrix (V2 - Fine-Tuned)
 
-This benchmark evaluates the newly fine-tuned `qwen2.5-0.5B` against the Gemini 2.5 Flash API across 200 fuzzy, noise-injected test frames.
+This benchmark evaluates the newly fine-tuned `SmolLM2-135M` against the Gemini 2.5 Flash API across 200 fuzzy, noise-injected test frames.
 
 ## Results Matrix
 
-| Metric | Goal | Frontier (Gemini 2.5 Flash) | Local Edge (Qwen2.5-0.5B-FT) |
+| Metric | Goal | Frontier (Gemini 2.5 Flash) | Local Edge (SmolLM2-135M-FT) |
 | :--- | :--- | :--- | :--- |
 | **Test Frames** | 200 | {valid_frontier} Valid | {n} Evaluated |
 | **Accuracy (Exact Match)** | > 95% | **{m1_front:.1f}%** | **{m1_slm:.1f}%** |
