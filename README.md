@@ -1,54 +1,57 @@
-# 🚁 Autonomous UAV Swarm Controller (Edge SLM)
+# 🚁 SwarmAI: Decentralized Edge Command
 
-## 📖 Overview
-This project implements a decentralized, fault-tolerant, aerospace-grade UAV swarm architecture driven entirely by a local, edge-deployed Small Language Model (SLM) (`qwen2.5-0.5B`). The system replaces rigid, hardcoded tactical controllers with a fine-tuned, natively inferencing AI capable of issuing dynamic swarm maneuvers (`ADJUST`, `SWITCH`, `HOLD`) based on chaotic, noisy telemetry data.
+SwarmAI is a Military-Grade, fault-tolerant autonomous drone swarm engine. It operates a 200-drone swarm using a highly optimized, locally-hosted Small Language Model (SLM) AI running entirely off-the-grid on edge devices (like Android smartphones). 
 
-## ✨ Features
-- **Decentralized Mesh Networking:** Implements Olfati-Saber Reynolds flocking math restricted by a local communication radius ($R_{comm}$).
-- **Hierarchical Sub-Squads:** Dynamically scales to 200+ drones by fracturing the swarm into autonomous 20-drone squads, preventing latency and "rubber-banding".
-- **Dynamic Leader Election:** Fully decentralized consensus. If a leader is destroyed, the orphaned swarm mathematically elects a new leader instantly.
-- **Line of Succession (Deputies):** Active leaders maintain a weighted fitness score of deputies to seamlessly hand off command without pausing the mesh.
-- **Gossip Protocol:** Target waypoints are broadcast across the mesh via timestamped heartbeats, ensuring split swarms don't fly backwards when they re-merge.
-- **Failsafe Resiliency:** Built-in defenses against RF Jamming (Orphan Backtracking), Adversarial Spoofing (Quorum Validation), and GPS noise injection.
-- **Edge AI Execution:** Runs the tactical AI strictly locally on CPU via `llama.cpp` using a highly compressed Q4 quantized model.
+By utilizing **xVAL Integer Scaling**, **Micro-Key Anchoring**, and a custom **Hierarchical Gossip Protocol**, SwarmAI achieves sub-200ms decision latency on mobile ARM processors without any reliance on 5G, Wi-Fi, or centralized cloud compute.
 
-## 🏛️ Architecture
-The architecture strictly decouples the physics engine from the AI and the visualization layer.
-1. **The Physics Engine (Euler Integration):** Computes $C^*$ (Connectivity), $E\sim$ (Energy Deviation), $K\sim$ (Velocity Mismatch), and Collisions.
-2. **The LLM Client:** Takes the noisy telemetry, formats it into an AI prompt, and executes local inference.
-3. **The Simulation Harness:** Bridges the physics engine and the AI, injecting adversarial events (Snipers, Jammers, Walls).
-4. **The 3D WebGL Engine:** An entirely decoupled Three.js HTML renderer that visualizes the JSON flight paths locally in the browser.
+---
 
-## 📂 Core Components
-- `simulator.py`: The absolute crux of the physics. Contains the flocking math, Hierarchy generation, Gossip protocol, and Leader Election logic.
-- `swarm_env.py`: The decoupled physical environment. Feeds fuzzy, Gaussian-noisy telemetry to the AI engine.
-- `llm_client.py`: The native LLaMA binding interface. Connects the system to the `.gguf` SLM model.
-- `export_3d_flight.py`: The Multi-Scenario Harness. Sets up the 3D world, runs the simulation, and dumps `flight_data_*.json`.
-- `build_3d_viewer.py`: Reads the exported JSON and dynamically generates a standalone `flight_viewer.html` WebGL experience.
-- `generate_full_training_dataset.py`: The AI data synthesizer. Generates 12,000 perfectly balanced, fuzzy/noisy rows to fine-tune the SLM.
+## 📚 Key Documentation
 
-## 🚀 How to Run Scenarios
-You can run the full multi-scenario testing suite from the command line. This simulates the flight and exports the physics data to JSON.
+If you are new to this repository, start by reviewing the following core documents:
+1. **[Executive Showcase Report](Executive_Showcase.md)** - Explains the business value, the architecture, and the benchmarking matrix. *(Perfect for C-Suite presentations).*
+2. **[Product Backlog](ProductBacklog.md)** - Outlines upcoming features, including the **Tri-Tier Fault-Tolerant Consensus Mesh** (HQ -> Phone -> Drone handover).
+3. **[Final Benchmark Report](Final_Benchmark_Report.md)** - The raw AI evaluation output logging 100% tactical accuracy at 162ms latency on mobile hardware.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+* Python 3.9+ 
+* `llama-cpp-python` (Compiled for your target hardware. For Termux/Android, ensure you install natively without OpenBLAS if required).
+* The 135M Model: You must download `SmolLM2-135M-Instruct.Q4_K_M.gguf` into the root directory.
+
+### 1. Running the Benchmark Stress Test
+To test the AI engine's latency and accuracy against the adversarial fuzzy dataset:
+```bash
+python benchmark_suite.py
+```
+*Note: On Termux/Android, memory tracking (`psutil`) is automatically bypassed to prevent sandbox crashes.*
+
+### 2. Generating & Viewing Scenarios
+To run the full 2-minute physics engine and see the AI navigate the swarm through adversarial obstacles, use the mobile runner script:
 
 ```bash
-# Example: Run the Split-Brain scenario
-.venv/bin/python export_3d_flight.py --scenario adv_a
-
-# Render the HTML Viewer
-.venv/bin/python build_3d_viewer.py
+# Example: Run the Sniper & Jammer Scenario
+bash run_mobile.sh adv_b
 ```
-*Note: Make sure you copy/rename the resulting `flight_data_{scenario}.json` to `flight_data.json` before building the viewer!*
+**Available Scenarios:**
+* `hero_tour` - Standard obstacle course.
+* `adv_a` - Split-Brain Gauntlet (Massive wall splitting the swarm).
+* `adv_b` - Sniper & Jammer (The Leader drone is destroyed mid-flight).
+* `armada` - Massive 200+ drone scale test.
+* `rtl` - Kobayashi Maru (The swarm is completely boxed in).
 
-## 🎬 Scenario Guide
-- **`--scenario hero_tour` (The Grand Tour):** A 20-drone nominal flight path through sparse pillars. Proves baseline stability against GPS noise.
-- **`--scenario adv_a` (Split-Brain Gauntlet):** A tight corridor leading into a massive wall. Forces the swarm to fracture, elect two leaders, and merge back together (triggering demotion).
-- **`--scenario adv_b` (Sniper & Jammer):** Midway through the flight, the Prime Commander is deleted and a 5.0m noise spike is injected. Proves the Line of Succession and Orphan Backtracking.
-- **`--scenario armada` (The Scale Test):** 200+ drones in open airspace. A pure stress test of the Hierarchical Squad Topology.
-- **`--scenario rtl` (Complete Refusal Trap):** The swarm is boxed in on all sides (Kobayashi Maru), forcing infinite collisions to trigger a complete `HOLD` / Return to Launch maneuver.
+Once the 120-second simulation finishes crunching the math, it will automatically generate two files:
+1. `flight_viewer.html` - A cinematic 3D WebGL renderer.
+2. `flight_viewer_2d.html` - A top-down HTML5 Canvas tactical radar.
+Simply open these files in separate browser tabs to view the demo!
 
-## 📊 Benchmarks
-The repository includes a rigorous computational benchmark evaluating the local 0.5B SLM against the Gemini 2.5 Flash API (Oracle). 
-When tested against 200 unseen, noisy telemetry frames, the fine-tuned model achieved **100% Exact Match Accuracy** while operating entirely offline.
+---
 
-The full results matrix and telemetry breakdown is stored in:
-👉 `Final_Benchmark_Report.md` (located in the artifacts directory).
+## 🛠️ System Architecture Highlights
+* **The Physics Engine:** 2D Euler Integration utilizing Olfati-Saber flocking algorithms.
+* **The AI Inference:** `llama.cpp` wrapper (`llm_client.py`) heavily patched to spoof OS signatures on Android Termux.
+* **The Data Pipeline:** Floating point telemetry is multiplied by 1,000 (xVAL) and anchored with micro-keys (e.g., `C:860|E:5`) to prevent SLM hallucination at extreme quantizations.
+
