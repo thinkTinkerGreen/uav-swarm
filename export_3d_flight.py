@@ -16,7 +16,7 @@ class ExportHarness(Harness):
 
     def setup_scenario(self):
         self.sim.q = np.zeros((self.n, 2))
-        self.sim.p = np.zeros((self.n, 2))
+        self.sim.p = np.array([[2.0, 0.0] for _ in range(self.n)])
         self.sim.obstacles = []
         
         # Default target
@@ -28,7 +28,7 @@ class ExportHarness(Harness):
             print("[SCENARIO] 1: The Grand Tour (Hero)")
             # 20 Drones, Sparse Pillars
             for i in range(self.n):
-                self.sim.q[i] = [-50 + (i%5)*5, (i//5)*5 - 10]
+                self.sim.q[i] = [-50 + (i%5)*4, (i//5)*4 - 8]
             for x in range(0, 150, 40):
                 self.sim.obstacles.append({'type': 'sphere', 'center': np.array([float(x), (x%80)-40.0]), 'radius': 10.0})
                 self.flight_data["obstacles"].append({"x": float(x), "y": (x%80)-40.0, "radius": 10.0})
@@ -37,7 +37,7 @@ class ExportHarness(Harness):
             print("[SCENARIO] 11: Split-Brain Gauntlet (Adversarial A)")
             # Massive wall in the center
             for i in range(self.n):
-                self.sim.q[i] = [-50 + (i%5)*5, (i//5)*5]
+                self.sim.q[i] = [-50 + (i%5)*4, (i//5)*4]
             for y in range(-100, 100, 10):
                 self.sim.obstacles.append({'type': 'sphere', 'center': np.array([50.0, float(y)]), 'radius': 12.0})
                 self.flight_data["obstacles"].append({"x": 50.0, "y": float(y), "radius": 12.0})
@@ -45,14 +45,14 @@ class ExportHarness(Harness):
         elif self.scenario == "adv_b":
             print("[SCENARIO] 12: Sniper & Jammer (Adversarial B)")
             for i in range(self.n):
-                self.sim.q[i] = [-50 + (i%5)*5, (i//5)*5]
+                self.sim.q[i] = [-50 + (i%5)*4, (i//5)*4]
                 
         elif self.scenario == "armada":
             print("[SCENARIO] 13: The Armada (200+ Drones)")
             # Need to adjust number of agents dynamically if the arg wasn't passed right, 
             # but we assume the harness was initialized with 200.
             for i in range(self.n):
-                self.sim.q[i] = [-100 + (i%20)*5, (i//20)*5 - 25]
+                self.sim.q[i] = [-100 + (i%20)*3, (i//20)*3 - 15]
                 
         elif self.scenario == "rtl":
             print("[SCENARIO] 14: Complete Refusal (RTL Kobayashi Maru)")
