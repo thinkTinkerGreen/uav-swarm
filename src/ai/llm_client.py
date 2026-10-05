@@ -27,7 +27,7 @@ class LLMClient:
             if not LLAMA_AVAILABLE:
                 raise RuntimeError("llama-cpp-python is not installed.")
             # We use the fine-tuned V4 SLM
-            model_file = "SmolLM2-135M-Instruct.Q4_K_M.gguf"
+            model_file = "models/SmolLM2-135M-Instruct.Q4_K_M.gguf"
             try:
                 print("[LLMClient] Initializing Native Llama with KV Cache...")
                 # LATENCY OPTIMIZATION: Shrink n_ctx to 128 to save mobile RAM
