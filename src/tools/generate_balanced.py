@@ -3,7 +3,7 @@ import json
 import os
 import sys
 import numpy as np
-from harness import Harness
+from src.engine.harness import Harness
 
 def apply_balanced_scenario(sim, scenario_type):
     if scenario_type == "nominal":

@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from harness import Harness
+from src.engine.harness import Harness
 import time
 
 def apply_long_journey(sim):

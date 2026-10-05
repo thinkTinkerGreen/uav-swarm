@@ -1,6 +1,6 @@
 import numpy as np
 import time
-from swarm_logger import log_event
+from src.engine.swarm_logger import log_event
 
 class OlfatiSaberMath:
     def __init__(self, d=7.0, r=8.4, epsilon=0.1, a=5.0, b=5.0, h=0.2):

@@ -1,5 +1,5 @@
-from swarm_env import SwarmEnvironment
-from controller import SwarmController
+from src.engine.swarm_env import SwarmEnvironment
+from src.engine.controller import SwarmController
 
 class Harness:
     """

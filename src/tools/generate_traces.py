@@ -2,7 +2,7 @@ import time
 import json
 import os
 import sys
-from harness import Harness
+from src.engine.harness import Harness
 from simulator_patch import apply_scenario
 
 scenarios_plan = [

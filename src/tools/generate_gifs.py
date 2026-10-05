@@ -1,5 +1,5 @@
 import os
-from harness import Harness
+from src.engine.harness import Harness
 from simulator_patch import apply_scenario
 
 scenarios = [

@@ -3,9 +3,9 @@ import time
 import numpy as np
 import copy
 import json
-from simulator import FlockSimulator
-from metrics import Metrics
-from swarm_logger import log_event
+from src.engine.simulator import FlockSimulator
+from src.engine.metrics import Metrics
+from src.engine.swarm_logger import log_event
 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):

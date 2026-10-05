@@ -34,7 +34,7 @@ To run the full 2-minute physics engine and see the AI navigate the swarm throug
 
 ```bash
 # Example: Run the Sniper & Jammer Scenario
-bash run_mobile.sh adv_b
+bash scripts/run_demo.sh adv_b
 ```
 **Available Scenarios:**
 * `hero_tour` - Standard obstacle course.

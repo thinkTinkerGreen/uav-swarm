@@ -1,7 +1,7 @@
 import os
 import time
 import numpy as np
-from harness import Harness
+from src.engine.harness import Harness
 import threading
 
 class CinematicHarness(Harness):

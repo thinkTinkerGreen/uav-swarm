@@ -1,8 +1,8 @@
 import time
 import os
 import numpy as np
-from harness import Harness
-from llm_client import LLMClient
+from src.engine.harness import Harness
+from src.ai.llm_client import LLMClient
 
 class EpicHarness(Harness):
     def __init__(self):

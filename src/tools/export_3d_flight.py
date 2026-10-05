@@ -2,7 +2,7 @@ import time
 import os
 import json
 import numpy as np
-from harness import Harness
+from src.engine.harness import Harness
 import math
 import argparse
 

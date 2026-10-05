@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-from simulator import FlockSimulator
+from src.engine.simulator import FlockSimulator
 
 def visualize_flock(num_agents=20, steps=200, dt=0.03, algo=2):
     sim = FlockSimulator(num_agents=num_agents, dim=2, algo=algo)

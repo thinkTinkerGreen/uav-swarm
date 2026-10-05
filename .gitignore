@@ -244,3 +244,5 @@ __marimo__/
 
 # Temporary patch scripts
 patch_*.py
+data/*.html
+data/*.json

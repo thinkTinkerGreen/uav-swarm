@@ -1,8 +1,8 @@
 import threading
 import time
 import json
-from llm_client import LLMClient
-from tool_wrapper import SwarmToolWrapper
+from src.ai.llm_client import LLMClient
+from src.ai.tool_wrapper import SwarmToolWrapper
 
 class SwarmController:
     """

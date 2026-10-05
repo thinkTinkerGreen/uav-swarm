@@ -9,7 +9,7 @@ except ImportError:
     print("[WARNING] psutil not found. Memory tracking disabled (Mobile Mode).")
 
 import os
-from llm_client import LLMClient
+from src.ai.llm_client import LLMClient
 
 def evaluate_slm():
     if not os.path.exists("benchmark_dataset.jsonl"):
