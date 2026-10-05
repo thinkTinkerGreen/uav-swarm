@@ -7,8 +7,8 @@ import math
 import argparse
 
 class ExportHarness(Harness):
-    def __init__(self, num_agents=20, scenario="hero_tour"):
-        super().__init__(num_agents=num_agents, backend="native", max_duration=60.0, record_traces=False, trajectory_file="dummy.json")
+    def __init__(self, num_agents=20, scenario="hero_tour", duration=120.0):
+        super().__init__(num_agents=num_agents, backend="native", max_duration=duration, record_traces=False, trajectory_file="dummy.json")
         self.n = num_agents
         self.scenario = scenario
         self.flight_data = {"frames": [], "obstacles": []}
@@ -124,8 +124,9 @@ class ExportHarness(Harness):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--scenario", type=str, default="hero_tour")
+    parser.add_argument("--duration", type=float, default=120.0, help="Simulation duration in seconds")
     args = parser.parse_args()
     
     agents = 200 if args.scenario == "armada" else 20
-    h2 = ExportHarness(num_agents=agents, scenario=args.scenario)
+    h2 = ExportHarness(num_agents=agents, scenario=args.scenario, duration=args.duration)
     h2.run_demo()
