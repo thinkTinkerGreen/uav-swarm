@@ -24,48 +24,62 @@ class ExportHarness(Harness):
         self.sim.p_r = np.array([3.0, 0.0])  
         self.sim.algo = 1
         
+        # We record the starting center of the swarm for the viewers
+        self.flight_data["start_point"] = {"x": -50.0, "y": 0.0}
+        self.flight_data["end_point"] = {"x": 200.0, "y": 0.0}
+        
         if self.scenario == "hero_tour":
             print("[SCENARIO] 1: The Grand Tour (Hero)")
-            # 20 Drones, Sparse Pillars
             for i in range(self.n):
-                self.sim.q[i] = [-50 + (i%5)*7, (i//5)*7 - 8]
+                self.sim.q[i] = [-50 + (i%5)*8, (i//5)*8 - 12]
+            self.flight_data["start_point"] = {"x": -34.0, "y": 0.0}
             for x in range(0, 150, 40):
                 self.sim.obstacles.append({'type': 'sphere', 'center': np.array([float(x), (x%80)-40.0]), 'radius': 10.0})
                 self.flight_data["obstacles"].append({"x": float(x), "y": (x%80)-40.0, "radius": 10.0})
                 
         elif self.scenario == "adv_a":
             print("[SCENARIO] 11: Split-Brain Gauntlet (Adversarial A)")
-            # Massive wall in the center
             for i in range(self.n):
-                self.sim.q[i] = [-50 + (i%5)*7, (i//5)*7]
+                self.sim.q[i] = [-50 + (i%5)*8, (i//5)*8 - 12]
+            self.flight_data["start_point"] = {"x": -34.0, "y": 0.0}
             for y in range(-100, 100, 10):
+                if -20 <= y <= 20: continue # Gap for the swarm
                 self.sim.obstacles.append({'type': 'sphere', 'center': np.array([50.0, float(y)]), 'radius': 12.0})
                 self.flight_data["obstacles"].append({"x": 50.0, "y": float(y), "radius": 12.0})
                 
         elif self.scenario == "adv_b":
             print("[SCENARIO] 12: Sniper & Jammer (Adversarial B)")
             for i in range(self.n):
-                self.sim.q[i] = [-50 + (i%5)*7, (i//5)*7]
+                self.sim.q[i] = [-50 + (i%5)*8, (i//5)*8 - 12]
+            self.flight_data["start_point"] = {"x": -34.0, "y": 0.0}
+            for x, y in [(0, 10), (20, -15), (50, 5), (80, -20), (120, 15)]:
+                self.sim.obstacles.append({'type': 'sphere', 'center': np.array([float(x), float(y)]), 'radius': 10.0})
+                self.flight_data["obstacles"].append({"x": float(x), "y": float(y), "radius": 10.0})
                 
         elif self.scenario == "armada":
             print("[SCENARIO] 13: The Armada (200+ Drones)")
-            # Need to adjust number of agents dynamically if the arg wasn't passed right, 
-            # but we assume the harness was initialized with 200.
             for i in range(self.n):
-                self.sim.q[i] = [-100 + (i%20)*7, (i//20)*7 - 35]
+                self.sim.q[i] = [-100 + (i%20)*8, (i//20)*8 - 40]
+            self.flight_data["start_point"] = {"x": -20.0, "y": 0.0}
+            # Dense obstacle field
+            for x in range(-20, 150, 40):
+                for y in range(-80, 80, 40):
+                    y_offset = (x % 30)
+                    self.sim.obstacles.append({'type': 'sphere', 'center': np.array([float(x), float(y + y_offset)]), 'radius': 12.0})
+                    self.flight_data["obstacles"].append({"x": float(x), "y": float(y + y_offset), "radius": 12.0})
                 
         elif self.scenario == "rtl":
             print("[SCENARIO] 14: Complete Refusal (RTL Kobayashi Maru)")
-            # Boxed in
             for i in range(self.n):
-                self.sim.q[i] = [0, (i%5)*5]
-            # Form a box around them
-            for x in [-20, 20]:
-                for y in range(-20, 30, 10):
+                self.sim.q[i] = [-15 + (i%5)*8, -15 + (i//5)*8]
+            self.flight_data["start_point"] = {"x": 0.0, "y": 0.0}
+            # Enclose them in a massive box
+            for x in [-50, 50]:
+                for y in range(-50, 60, 10):
                     self.sim.obstacles.append({'type': 'sphere', 'center': np.array([float(x), float(y)]), 'radius': 10.0})
                     self.flight_data["obstacles"].append({"x": float(x), "y": float(y), "radius": 10.0})
-            for y in [-20, 30]:
-                for x in range(-10, 20, 10):
+            for y in [-50, 50]:
+                for x in range(-40, 50, 10):
                     self.sim.obstacles.append({'type': 'sphere', 'center': np.array([float(x), float(y)]), 'radius': 10.0})
                     self.flight_data["obstacles"].append({"x": float(x), "y": float(y), "radius": 10.0})
 

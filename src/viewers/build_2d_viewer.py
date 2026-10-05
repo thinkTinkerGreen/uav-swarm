@@ -98,6 +98,38 @@ def build_2d_html():
             ctx.stroke();
         }}
 
+        function drawStart() {{
+            if (!flightData.start_point) return;
+            const px = offsetX + flightData.start_point.x * scale;
+            const py = offsetY - flightData.start_point.y * scale;
+            
+            // Draw green cone
+            ctx.fillStyle = "#00FF00";
+            ctx.beginPath();
+            ctx.moveTo(px, py - 10);
+            ctx.lineTo(px - 8, py + 10);
+            ctx.lineTo(px + 8, py + 10);
+            ctx.closePath();
+            ctx.fill();
+        }}
+
+        function drawEnd() {{
+            if (!flightData.end_point) return;
+            const px = offsetX + flightData.end_point.x * scale;
+            const py = offsetY - flightData.end_point.y * scale;
+            
+            // Draw checkered flag
+            ctx.fillStyle = "white";
+            ctx.fillRect(px, py - 15, 20, 15);
+            ctx.fillStyle = "red";
+            ctx.fillRect(px, py - 15, 10, 7.5);
+            ctx.fillRect(px + 10, py - 7.5, 10, 7.5);
+            
+            // Flag pole
+            ctx.fillStyle = "#888";
+            ctx.fillRect(px - 2, py - 15, 2, 25);
+        }}
+
         function animate() {{
             requestAnimationFrame(animate);
 
@@ -116,8 +148,9 @@ def build_2d_html():
                     ctx.stroke();
                 }}
 
-                // Draw Start Cone
+                // Draw Start Cone and End Flag
                 drawStart();
+                drawEnd();
                 
                 // Draw Obstacles
                 flightData.obstacles.forEach(obs => {{
