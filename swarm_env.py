@@ -51,7 +51,7 @@ class SwarmEnvironment:
         start_time = time.time()
         step_count = 0
         
-        while self.running and (time.time() - start_time) < self.max_duration:
+        while self.running and (step_count * self.dt) < self.max_duration:
             loop_start = time.time()
             
             with self.lock:
