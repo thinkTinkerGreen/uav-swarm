@@ -112,6 +112,10 @@ class ExportHarness(Harness):
                     "target_x": target_q[0],
                     "target_y": target_q[1]
                 })
+                
+                # Progress bar
+                if len(self.flight_data["frames"]) % 50 == 0:
+                    print(f"\r[Exporter] Rendered {len(self.flight_data['frames'])} frames...", end='', flush=True)
                     
             time.sleep(0.05)
             
