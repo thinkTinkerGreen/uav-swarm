@@ -1,6 +1,10 @@
 import json
 import time
 
+import sys
+if sys.platform == "android":
+    sys.platform = "linux"  # Hack to bypass llama-cpp-python 'Unsupported platform' error on Termux
+
 try:
     from llama_cpp import Llama
     LLAMA_AVAILABLE = True
