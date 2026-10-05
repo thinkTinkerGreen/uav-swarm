@@ -116,6 +116,9 @@ def build_2d_html():
                     ctx.stroke();
                 }}
 
+                // Draw Start Cone
+                drawStart();
+                
                 // Draw Obstacles
                 flightData.obstacles.forEach(obs => {{
                     drawObstacle(obs.x, obs.y, obs.radius);
