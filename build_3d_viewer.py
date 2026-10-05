@@ -64,11 +64,22 @@ def build_html():
         gridHelper.material.transparent = true;
         scene.add(gridHelper);
         
-        const reticleGeo = new THREE.RingGeometry(2, 3, 32);
-        const reticleMat = new THREE.MeshBasicMaterial({{ color: 0xFF0000, side: THREE.DoubleSide }});
+
+        // START POINT (Green Cone)
+        const startGeo = new THREE.ConeGeometry(3, 10, 16);
+        const startMat = new THREE.MeshLambertMaterial({{ color: 0x00FF00 }});
+        const startCone = new THREE.Mesh(startGeo, startMat);
+        startCone.position.set(-50, 5, 0);
+        scene.add(startCone);
+
+        // TARGET RETICLE / FLAG (Red Checkered/Blob)
+        const reticleGeo = new THREE.CylinderGeometry(2, 2, 8, 16);
+        const reticleMat = new THREE.MeshLambertMaterial({{ color: 0xFF0000 }});
         const targetReticle = new THREE.Mesh(reticleGeo, reticleMat);
-        targetReticle.rotation.x = -Math.PI / 2;
         scene.add(targetReticle);
+        
+        // Ground Geo (Keep as is)
+
         
         const groundGeo = new THREE.PlaneGeometry(400, 400);
         const groundMat = new THREE.MeshLambertMaterial({{ color: 0x90EE90 }});
