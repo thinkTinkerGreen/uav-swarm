@@ -33,3 +33,8 @@ This backlog tracks the architectural upgrades required to transition the system
 *   **What is this item about?** Aggregating the benchmarking matrix, the Byzantine fault survival graphs, and the SLM latency metrics into a formal academic paper format.
 *   **Why does this need to be done?** To publish the novel architecture (Decentralized Edge SLM with Hierarchical Gossip) to the defense and aerospace engineering community.
 *   **Benefits:** Establishes this architecture as a provable, peer-reviewed standard for offline, AI-driven swarm robotics.
+
+## 📡 7. Tri-Tier Fault-Tolerant Consensus Mesh (The Resilience Triad)
+*   **What is this item about?** Engineering a system where the AI runs simultaneously and coherently across three distinct network tiers: a Remote HQ Base (Cloud), an On-Location Edge Device (Field Operator's Phone), and the Prime Drone itself. They will be synchronized via a `consensus_mesh` module executing a Raft-like UDP heartbeat protocol.
+*   **Why does this need to be done?** True military-grade resilience dictates that there can be no single point of failure. If the HQ loses satellite uplink, the local commander's phone must take over. If the commander is compromised or jammed, the Prime Drone must instantly detect the heartbeat timeout and self-promote to authoritative leader without halting the swarm's trajectory.
+*   **Benefits:** Guarantees absolute mission continuation. Provides seamless "Shadow Mode" handover during network strikes, ensuring the swarm remains highly coordinated even under catastrophic localized communication destruction.
