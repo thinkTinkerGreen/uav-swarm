@@ -12,11 +12,11 @@ import os
 from src.ai.llm_client import LLMClient
 
 def evaluate_slm():
-    if not os.path.exists("benchmark_dataset.jsonl"):
+    if not os.path.exists("data/benchmark_dataset.jsonl"):
         print("Waiting for dataset generation to complete...")
         return
         
-    with open("benchmark_dataset.jsonl", "r") as f:
+    with open("data/benchmark_dataset.jsonl", "r") as f:
         lines = f.readlines()
         
     dataset = [json.loads(line) for line in lines]
@@ -130,7 +130,7 @@ This benchmark evaluates the newly fine-tuned `SmolLM2-135M` against the Gemini 
             md_report += d + "\n"
         md_report += "```\n"
 
-    with open("Final_Benchmark_Report.md", "w") as f:
+    with open("docs/Final_Benchmark_Report.md", "w") as f:
         f.write(md_report)
         
     print("Report written to Final_Benchmark_Report.md!")
