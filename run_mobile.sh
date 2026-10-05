@@ -7,8 +7,8 @@ if [ -f ".venv/bin/python" ]; then
     PYTHON_CMD=".venv/bin/python"
 fi
 
-echo "🚁 Generating Scenario: $SCENARIO..."
-$PYTHON_CMD export_3d_flight.py --scenario $SCENARIO
+echo "🚁 Generating Scenario: $SCENARIO (Full 2-Minute Simulation)..."
+$PYTHON_CMD export_3d_flight.py --scenario $SCENARIO --duration 120.0
 
 # Verify the physics engine actually produced the file
 if [ -f "flight_data_${SCENARIO}.json" ]; then
@@ -22,5 +22,11 @@ fi
 echo "🏗️ Building 3D HTML Viewer..."
 $PYTHON_CMD build_3d_viewer.py
 
-echo "📱 Launching 3D Viewer in Android Browser..."
-termux-open flight_viewer.html
+echo "📡 Building 2D Radar Viewer..."
+$PYTHON_CMD build_2d_viewer.py
+
+echo "📺 Building Split-Screen Demo..."
+$PYTHON_CMD build_split_viewer.py
+
+echo "📱 Launching Split-Screen Demo in Android Browser..."
+termux-open split_demo.html
