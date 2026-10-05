@@ -130,7 +130,7 @@ This benchmark evaluates the newly fine-tuned `SmolLM2-135M` against the Gemini 
             md_report += d + "\n"
         md_report += "```\n"
 
-    with open("/home/opc/.gemini/antigravity-cli/brain/666ea37a-f32d-4909-be4a-33f8a87665f1/Final_Benchmark_Report.md", "w") as f:
+    with open("Final_Benchmark_Report.md", "w") as f:
         f.write(md_report)
         
     print("Report written to Final_Benchmark_Report.md!")
