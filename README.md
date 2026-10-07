@@ -1,8 +1,15 @@
 # 🚁 SwarmAI: Decentralized Edge Command
 
-SwarmAI is a Military-Grade, fault-tolerant autonomous drone swarm engine. It operates a 200-drone swarm using a highly optimized, locally-hosted Small Language Model (SLM) AI running entirely off-the-grid on edge devices (like Android smartphones). 
+SwarmAI is a highly efficient, fault-tolerant autonomous drone swarm engine. It operates a 200-drone swarm using a highly optimized, locally-hosted Small Language Model (SLM) AI running entirely off-the-grid on edge devices (like Android smartphones). 
 
 By utilizing **xVAL Integer Scaling**, **Micro-Key Anchoring**, and a custom **Hierarchical Gossip Protocol**, SwarmAI achieves sub-200ms decision latency on mobile ARM processors without any reliance on 5G, Wi-Fi, or centralized cloud compute.
+
+---
+Demo: There is no youtube video instead a folder is shared having several of the scenarios as mentioned in the scenario section.
+here is the link to the folder where all the different demo flights can be found.
+https://drive.google.com/drive/folders/1nTBV_iqxDRO5LkBn1RpobS4Ir-CH-5GH?usp=sharing
+
+Simply open these files in separate browser tabs to view the demo!
 
 ---
 
