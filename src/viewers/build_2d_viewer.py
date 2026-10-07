@@ -166,7 +166,9 @@ def build_2d_html():
                 
                 // Draw Drones
                 frameObj.drones.forEach(d => {{
-                    drawDrone(d.x, d.y, d.yaw, d.is_leader);
+                    if (d.x < 9000) {{
+                        drawDrone(d.x, d.y, d.yaw, d.is_leader);
+                    }}
                 }});
 
                 currentFrame++;

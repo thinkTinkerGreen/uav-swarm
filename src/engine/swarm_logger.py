@@ -46,6 +46,11 @@ class BlackboxRecorder:
         logger.info(json.dumps(dump_data))
         return dump_data
 
+def _json_default(obj):
+    if hasattr(obj, "item"):
+        return obj.item()
+    raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
+
 def log_event(event_type, **kwargs):
     """Structured JSON event logger"""
     payload = {
@@ -53,4 +58,4 @@ def log_event(event_type, **kwargs):
         "event": event_type
     }
     payload.update(kwargs)
-    logger.info(json.dumps(payload))
+    logger.info(json.dumps(payload, default=_json_default))

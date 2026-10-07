@@ -56,14 +56,15 @@ class SwarmEnvironment:
             
             with self.lock:
                 if self.failsafe_triggered:
-                    self.sim.p *= 0.0 
+                    # In failsafe HOLD, damp forward speed without freezing repulsion forces
+                    self.sim.p *= 0.85
                     
                 self.sim.step(dt=self.dt)
                 
                 noisy_q = self.sim.q + np.random.normal(0, self.sensor_noise_std, self.sim.q.shape)
                 noisy_p = self.sim.p + np.random.normal(0, 0.1, self.sim.p.shape)
                 
-                metrics = self.metrics_engine.compute_all(noisy_q, noisy_p)
+                metrics = self.metrics_engine.compute_all(noisy_q, noisy_p, obstacles=self.obstacles)
                 self.metrics_history.append(metrics)
                 if len(self.metrics_history) > 10:
                     self.metrics_history.pop(0)

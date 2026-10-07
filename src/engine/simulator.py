@@ -52,7 +52,7 @@ class FlockSimulator:
         self.c2_a = 2.0 * np.sqrt(self.c1_a)
         self.c1_g = 0.2
         self.c2_g = 2.0 * np.sqrt(self.c1_g)
-        self.c1_b = 2.0
+        self.c1_b = 15.0
         self.c2_b = 2.0 * np.sqrt(self.c1_b)
         
         # State
@@ -63,6 +63,14 @@ class FlockSimulator:
         self.q_r = np.ones(self.m) * 100.0
         self.p_r = np.zeros(self.m)
         self.obstacles = [] 
+        # When True every live agent receives the gamma (navigation) term (Olfati-Saber Alg. 2),
+        # not only squad leaders.
+        self.gamma_all = False
+        self.max_speed = None
+        # Optional hard short-range separation (metres). The sigma-norm lattice force vanishes as
+        # ||q_ij|| -> 0, so dense swarms can collapse onto each other; this guard prevents that.
+        self.sep_radius = None
+        self.sep_gain = 6.0
         
         # Actuator Noise (Wind Gusts)
         self.wind_strength = 0.5 
@@ -94,25 +102,28 @@ class FlockSimulator:
             self.cached_targets[i] = self.q_r
 
     def compute_u_alpha(self, adj):
-        u_alpha = np.zeros((self.n, self.m))
-        for i in range(self.n):
-            # Orphan Recovery Failsafe
-            if np.sum(adj[i]) == 0:
-                log_event("ORPHAN_RECOVERY", drone_id=i, action="backtrack")
-                u_alpha[i] = -self.p[i] * 2.0 
-                continue
-                
-            for j in range(self.n):
-                if i != j and adj[i, j] == 1:
-                    norm_q_ij = np.linalg.norm(self.q[j] - self.q[i])
-                    sigma_norm_qij = self.math.sigma_norm(norm_q_ij)
-                    n_ij = self.math.n_ij(self.q[i], self.q[j])
-                    a_ij = self.math.rho_h(sigma_norm_qij / self.math.r_alpha)
-                    
-                    term1 = self.math.phi_alpha(sigma_norm_qij) * n_ij
-                    term2 = a_ij * (self.p[j] - self.p[i])
-                    
-                    u_alpha[i] += self.c1_a * term1 + self.c2_a * term2
+        """Olfati-Saber alpha-lattice term, vectorised over all pairs (same maths as the pairwise loop)."""
+        m = self.math
+        diff = self.q[None, :, :] - self.q[:, None, :]          # diff[i,j] = q_j - q_i
+        dist2 = np.sum(diff**2, axis=-1)
+        root = np.sqrt(1.0 + m.epsilon * dist2)
+        sig = (1.0 / m.epsilon) * (root - 1.0)                  # sigma_norm(||q_ij||)
+        n_ij = diff / root[..., None]
+        a_ij = m.rho_h(sig / m.r_alpha)
+        phi = m.phi_alpha(sig)
+        mask = adj.astype(bool)
+        np.fill_diagonal(mask, False)
+        dp = self.p[None, :, :] - self.p[:, None, :]            # p_j - p_i
+        term1 = np.where(mask[..., None], phi[..., None] * n_ij, 0.0).sum(axis=1)
+        term2 = np.where(mask[..., None], a_ij[..., None] * dp, 0.0).sum(axis=1)
+        u_alpha = self.c1_a * term1 + self.c2_a * term2
+
+        dead = self.q[:, 0] > 9000
+        orphan = (mask.sum(axis=1) == 0) & ~dead
+        for i in np.nonzero(orphan)[0]:
+            log_event("ORPHAN_RECOVERY", drone_id=int(i), action="backtrack")
+            u_alpha[i] = -self.p[i] * (0.2 if self.gamma_all else 2.0)
+        u_alpha[dead] = 0.0
         return u_alpha
 
     def gossip_protocol(self, adj):
@@ -132,13 +143,16 @@ class FlockSimulator:
             while queue:
                 curr = queue.pop(0)
                 self.cached_targets[curr] = sync_target
-                for neighbor in range(self.n):
-                    if adj[curr, neighbor] == 1 and not visited[neighbor]:
+                for neighbor in np.nonzero(adj[curr])[0]:
+                    if not visited[neighbor]:
                         visited[neighbor] = True
                         queue.append(neighbor)
 
     def update_hierarchy(self, adj):
         """Dynamic Squad Leader Election & Demotion Protocol"""
+        # Leaders always hold the *current* reference target (it moves with p_r)
+        for leader in self.squad_leaders:
+            self.cached_targets[leader] = self.q_r.copy()
         self.gossip_protocol(adj)
         
         components = []
@@ -151,8 +165,8 @@ class FlockSimulator:
                 while queue:
                     curr = queue.pop(0)
                     comp.append(curr)
-                    for neighbor in range(self.n):
-                        if adj[curr, neighbor] == 1 and not visited[neighbor]:
+                    for neighbor in np.nonzero(adj[curr])[0]:
+                        if not visited[neighbor]:
                             visited[neighbor] = True
                             queue.append(neighbor)
                 components.append(comp)
@@ -199,19 +213,19 @@ class FlockSimulator:
     def compute_u_gamma(self):
         u_gamma = np.zeros((self.n, self.m))
         if self.algo >= 1:
-            for leader in self.squad_leaders:
-                target = self.cached_targets[leader]
-                u_gamma[leader] = -self.c1_g * self.math.sigma_1(self.q[leader] - target) - self.c2_g * (self.p[leader] - self.p_r)
+            agents = range(self.n) if self.gamma_all else self.squad_leaders
+            for i in agents:
+                if self.q[i][0] > 9000:
+                    continue
+                target = self.cached_targets[i] if not self.gamma_all else self.q_r
+                u_gamma[i] = -self.c1_g * self.math.sigma_1(self.q[i] - target) - self.c2_g * (self.p[i] - self.p_r)
         return u_gamma
 
     def step(self, dt=0.03):
         # 1. Build Adjacency Matrix (R_comm)
-        adj = np.zeros((self.n, self.n))
-        for i in range(self.n):
-            for j in range(i+1, self.n):
-                if np.linalg.norm(self.q[i] - self.q[j]) < self.math.r:
-                    adj[i, j] = 1
-                    adj[j, i] = 1
+        d = np.linalg.norm(self.q[:, None, :] - self.q[None, :, :], axis=-1)
+        adj = (d < self.math.r).astype(float)
+        np.fill_diagonal(adj, 0.0)
 
         # 2. Run Enterprise Diagnostics & Failsafes
         self.update_hierarchy(adj)
@@ -223,7 +237,24 @@ class FlockSimulator:
         u_wind = np.random.normal(0, self.wind_strength, (self.n, self.m))
         
         u = u_a + u_g + u_b + u_wind
+        if self.sep_radius:
+            diff = self.q[:, None, :] - self.q[None, :, :]       # q_i - q_j
+            d = np.linalg.norm(diff, axis=-1)
+            np.fill_diagonal(d, 1e9)
+            close = d < self.sep_radius
+            if close.any():
+                w = np.where(close, self.sep_gain * (self.sep_radius - d) / np.maximum(d, 1e-3), 0.0)
+                u = u + np.sum(w[..., None] * diff, axis=1)
+        
+        for i in range(self.n):
+            if self.q[i][0] > 9000:
+                u[i] = 0
+                self.p[i] = 0
+                
         self.p += u * dt
+        if self.max_speed is not None:
+            sp = np.linalg.norm(self.p, axis=1, keepdims=True)
+            self.p = np.where(sp > self.max_speed, self.p * self.max_speed / np.maximum(sp, 1e-9), self.p)
         self.q += self.p * dt
         
         if hasattr(self, 'p_r'):
@@ -235,12 +266,23 @@ class FlockSimulator:
 
     def compute_u_beta(self):
         u_beta = np.zeros((self.n, self.m))
-        if self.algo >= 2 and hasattr(self, 'obstacles'):
-            for i in range(self.n):
-                for obs in self.obstacles:
-                    if obs['type'] == 'sphere':
-                        dist = np.linalg.norm(self.q[i] - obs['center'])
-                        if dist < obs['radius'] + self.math.r:
-                            n_ik = (self.q[i] - obs['center']) / dist
-                            u_beta[i] += self.c1_b * n_ik * (1.0 / (dist - obs['radius'] + 0.1))
+        if not getattr(self, 'obstacles', None):
+            return u_beta
+        r_s = self.math.r
+        for obs in self.obstacles:
+            if obs['type'] != 'sphere':
+                continue
+            rel = self.q - obs['center']
+            dist = np.linalg.norm(rel, axis=1)
+            near = (dist < obs['radius'] + r_s) & (dist > 1e-9)
+            if not near.any():
+                continue
+            n_ik = rel[near] / dist[near][:, None]
+            # Fluid-like tangential force to slip around obstacles, pointing toward +X (target side)
+            t_ik = np.stack([-n_ik[:, 1], n_ik[:, 0]], axis=1)
+            t_ik[t_ik[:, 0] < 0] *= -1
+            gap = dist[near] - obs['radius']
+            # Taper to exactly zero at the edge of the sensing range (no repulsive "ring" trap)
+            rep = self.c1_b * np.maximum(0.0, 1.0 / (gap + 0.1) - 1.0 / (r_s + 0.1))
+            u_beta[near] += n_ik * rep[:, None] + t_ik * (rep * 1.5)[:, None]
         return u_beta

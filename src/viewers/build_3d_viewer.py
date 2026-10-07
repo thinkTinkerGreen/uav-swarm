@@ -69,7 +69,11 @@ def build_html():
         const startGeo = new THREE.ConeGeometry(3, 10, 16);
         const startMat = new THREE.MeshLambertMaterial({{ color: 0x00FF00 }});
         const startCone = new THREE.Mesh(startGeo, startMat);
-        startCone.position.set(-50, 5, 0);
+        if (flightData.start_point) {{
+            startCone.position.set(flightData.start_point.x, 5, -flightData.start_point.y);
+        }} else {{
+            startCone.position.set(-50, 5, 0);
+        }}
         scene.add(startCone);
 
         // TARGET RETICLE / FLAG (Red Checkered/Blob)
@@ -77,6 +81,15 @@ def build_html():
         const reticleMat = new THREE.MeshLambertMaterial({{ color: 0xFF0000 }});
         const targetReticle = new THREE.Mesh(reticleGeo, reticleMat);
         scene.add(targetReticle);
+        
+        // END POINT FLAG (Checkered Box)
+        if (flightData.end_point) {{
+            const endGeo = new THREE.BoxGeometry(10, 10, 10);
+            const endMat = new THREE.MeshLambertMaterial({{ color: 0xFFFFFF }});
+            const endBox = new THREE.Mesh(endGeo, endMat);
+            endBox.position.set(flightData.end_point.x, 5, -flightData.end_point.y);
+            scene.add(endBox);
+        }}
         
         // Ground Geo (Keep as is)
 
@@ -114,7 +127,8 @@ def build_html():
             return group;
         }};
 
-        for(let i=0; i<20; i++) {{ // Assuming up to 20 for these demos
+        const numDrones = (flightData.frames && flightData.frames.length > 0 && flightData.frames[0].drones) ? flightData.frames[0].drones.length : 20;
+        for(let i=0; i<numDrones; i++) {{
             drones.push(createDrone());
         }}
 
@@ -161,15 +175,20 @@ def build_html():
                 frameData.forEach((dData, idx) => {{
                     if(idx < drones.length) {{
                         const drone = drones[idx];
-                        drone.position.set(dData.x, 10, -dData.y); 
-                        drone.rotation.y = -dData.yaw; 
-                        
-                        const bodyMesh = drone.getObjectByName("body");
-                        if (dData.is_leader) {{
-                            bodyMesh.material.color.setHex(0xFFC107);
-                            currentLeader = dData;
+                        if (dData.x > 9000) {{
+                            drone.visible = false;
                         }} else {{
-                            bodyMesh.material.color.setHex(0x424242);
+                            drone.visible = true;
+                            drone.position.set(dData.x, 10, -dData.y); 
+                            drone.rotation.y = -dData.yaw; 
+                            
+                            const bodyMesh = drone.getObjectByName("body");
+                            if (dData.is_leader) {{
+                                bodyMesh.material.color.setHex(0xFFC107);
+                                currentLeader = dData;
+                            }} else {{
+                                bodyMesh.material.color.setHex(0x424242);
+                            }}
                         }}
                     }}
                 }});
